@@ -1,0 +1,42 @@
+package watcher
+
+import (
+	"fmt"
+	"time"
+	"coding.net/tedcy/sheep/src/watcher/etcd"
+)
+
+type WatcherI interface {
+	Create(path string, data []byte) error
+	Delete(path string) error
+
+	Read(path string) ([]byte, error)
+	//return keys, index, error
+	List(path string) ([]string, uint64, error)
+	
+	Update(path string, data []byte) error
+
+	//cb should return afterIndex
+	Watch(path string, cb func() (uint64, error)) error
+
+	CreateEphemeral(path string, data []byte) error
+	CreateEphemeralInOrder(path string, data []byte) error
+}
+
+type Config struct {
+	WatcherName		string
+	AddrList		[]string
+	Timeout			time.Duration
+}
+
+func New(config *Config) (WatcherI, error){
+	switch config.WatcherName {
+	case "etcd":
+		etcdClient,err := etcd.New(config.AddrList, config.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		return etcdClient, nil
+	}
+	return nil, fmt.Errorf("invalid watcherName %s", config.WatcherName)
+}

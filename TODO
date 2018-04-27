@@ -1,0 +1,47 @@
+
+
+-------------------------------------------
+weight_balancer逻辑
+上游向下游调用负载均衡器
+breaker获取关闭的节点和开启的节点
+weighter获取权值变化(30秒一次)
+watcher获取etcd节电变化
+两者都通过intercept进行逻辑around
+
+balance监听外部breaker,外部watcher和内部weighter
+
+节电在线但是被关闭的无法被选举（得到的权值不参与get）
+        
+s = sheep.New()
+s.EnableBreaker()
+s.SetBalance("WeightedResponseTime")
+
+给每个服务器一个初始权值
+选择节点的时候使用随机数生成0到最大区间，选择区间对应的服务器
+
+type Balancer interface {
+	Start(target string, config BalancerConfig) error
+	Up(addr Address) (down func(error))
+	Get(ctx context.Context, opts BalancerGetOptions) (addr Address, put func(), err error)
+	Notify() <-chan []Address
+	Close() error
+}
+
+当开启WeightedResponseTime，每隔30秒重新生成一次权值
+http://www.cnblogs.com/li3807/p/7469024.html
+如果开启了breaker，那么计算权重阶段和choose阶段都只有完全打开状态的服务器才能参与
+
+---------------------------
+熔断器
+https://www.jianshu.com/p/75bb694df964
+
+客户端熔断器在client库封装加入grpc的拦截器，开启以后运行于负载均衡器内
+
+开状态      enable权值
+关          disable权值
+半开        加入test
+
+---------------------------
+
+server熔断限流器
+通过intercept逻辑around
