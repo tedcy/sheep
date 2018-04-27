@@ -3,8 +3,8 @@ package balancer
 import (
 	"google.golang.org/grpc"
 	"golang.org/x/net/context"
-	"coding.net/tedcy/sheep/src/balancer/weighter_balancer"
-	"coding.net/tedcy/sheep/src/balancer/watcher_wrapper"
+	"coding.net/tedcy/sheep/src/client/balancer/weighter_balancer"
+	"coding.net/tedcy/sheep/src/client/balancer/watcher_wrapper"
 	"coding.net/tedcy/sheep/src/watcher"
 )
 

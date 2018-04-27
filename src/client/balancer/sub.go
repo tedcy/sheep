@@ -27,22 +27,20 @@ func (this *Balancer) SetNotifyWeighterChange(notify <-chan []*common.KV) {
 }
 
 //breaker
-func (this *Balancer) SetNotifyOpen(notify <-chan []string) {
-	for nodes := range notify {
-		for _, node := range nodes {
-			this.weighterBalancer.Enable(node)
-		}
+func (this *Balancer) SetNotifyOpen(notify <-chan string) {
+	for node := range notify {
+		this.weighterBalancer.Enable(node)
 	}
 }
 
-func (this *Balancer) SetNotifyClose(notify <-chan []string) {
-	for nodes := range notify {
-		for _, node := range nodes {
-			this.weighterBalancer.Disable(node)
-		}
+func (this *Balancer) SetNotifyClose(notify <-chan string) {
+	for node := range notify {
+		this.weighterBalancer.Disable(node)
 	}
 }
 
-func (this *Balancer) SetNotifyHalfOpen(notify <-chan []string) {
-	//todo add test list
+func (this *Balancer) SetNotifyHalfOpen(notify <-chan string) {
+	for node := range notify {
+		this.weighterBalancer.Enable(node)
+	}
 }

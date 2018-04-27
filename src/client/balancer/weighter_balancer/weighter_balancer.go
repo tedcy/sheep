@@ -25,13 +25,23 @@ type WeightBalancerI interface{
 }
 
 func New() WeightBalancerI {
-	return &balancer{}
+	b := &balancer{}
+	b.data = make(map[string]*value)
+	return b
 }
 
 type balancer struct {
-
+	data		map[string]*value
 }
 
+type value struct {
+	key			string
+	weight		int
+	enable		bool
+}
+
+//update的任何数据会生成weight池用于get
+//生成weight池需要加写锁，get为读锁
 func (this *balancer) Get() string{
 	return ""
 }
