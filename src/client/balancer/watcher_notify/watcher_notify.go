@@ -1,15 +1,15 @@
-package watcher_wrapper
+package watcher_notify
 
 import (
 	"coding.net/tedcy/sheep/src/watcher"
 )
 
-type WatcherWrapperI interface{
+type WatcherNotifyI interface{
 	NotifyWatcherChange(path string) <-chan []string
 }
 
-func New(config *watcher.Config) (WatcherWrapperI, error) {
-	w := &watcherWrapper{}
+func New(config *watcher.Config) (WatcherNotifyI, error) {
+	w := &watcherNotify{}
 	var err error
 	w.watcher, err = watcher.New(config)
 	if err != nil {
@@ -19,13 +19,13 @@ func New(config *watcher.Config) (WatcherWrapperI, error) {
 	return w, nil
 }
 
-type watcherWrapper struct {
+type watcherNotify struct {
 	watcher			watcher.WatcherI
 	nodes			chan []string
 	path			string
 }
 
-func (this *watcherWrapper) NotifyWatcherChange(path string) <-chan []string {
+func (this *watcherNotify) NotifyWatcherChange(path string) <-chan []string {
 	this.path = path
 	for ;; {
 		err := this.watcher.Watch(path, this.pushChan)
@@ -36,7 +36,7 @@ func (this *watcherWrapper) NotifyWatcherChange(path string) <-chan []string {
 	return nil
 }
 
-func (this *watcherWrapper) pushChan() (uint64, error) {
+func (this *watcherNotify) pushChan() (uint64, error) {
 	nodes, afterIndex, err := this.watcher.List(this.path)
 	if err != nil {
 		return 0, err

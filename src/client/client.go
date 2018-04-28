@@ -2,8 +2,8 @@ package client
 
 import (
 	"coding.net/tedcy/sheep/src/client/balancer"
-	"coding.net/tedcy/sheep/src/client/breaker_wrapper"
-	"coding.net/tedcy/sheep/src/client/weighter"
+	"coding.net/tedcy/sheep/src/client/breaker_notify"
+	"coding.net/tedcy/sheep/src/client/weighter_notify"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -16,9 +16,9 @@ const (
 )
 
 type Client struct {
-	breaker  breaker_wrapper.BreakerI
+	breaker  breaker_notify.BreakerNotifyI
 	balancer *balancer.Balancer
-	weighter weighter.WeighterI
+	weighter weighter_notify.WeighterNotifyI
 	//打开熔断器时插入aop
 	//使用balance返回aop不为空就插入
 	intercepts []grpc.UnaryClientInterceptor
@@ -29,7 +29,7 @@ func New() (*Client, error) {
 }
 
 func (this *Client) EnableBreak() {
-	this.breaker = breaker_wrapper.New()
+	this.breaker = breaker_notify.New()
 	this.balancer.SetNotifyOpen(this.breaker.NotifyOpen())
 	this.balancer.SetNotifyClose(this.breaker.NotifyClose())
 	this.balancer.SetNotifyHalfOpen(this.breaker.NotifyHalfOpen())
@@ -39,7 +39,7 @@ func (this *Client) EnableBreak() {
 func (this *Client) WithBalanceType(t BalancerType) {
 	switch t {
 	case RespTimeBalancer:
-		this.weighter = weighter.New(weighter.RespTimeWeighter)
+		this.weighter = weighter_notify.New(weighter_notify.RespTimeWeighter)
 	}
 	this.balancer.SetNotifyWeighterChange(this.weighter.NotifyWeighterChange())
 	this.intercepts = append(this.intercepts, this.weighter.GrpcUnaryClientInterceptor)

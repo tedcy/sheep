@@ -1,4 +1,4 @@
-package breaker_wrapper
+package breaker_notify
 
 import (
 	"golang.org/x/net/context"
@@ -8,29 +8,29 @@ import (
 	"sync"
 )
 
-type BreakerI interface{
+type BreakerNotifyI interface{
 	GrpcUnaryClientInterceptor (ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error
 	NotifyOpen() <-chan string
 	NotifyHalfOpen() <-chan string
 	NotifyClose() <-chan string
 }
 
-func New() BreakerI{
-	b := &breaker_wrapper{}
+func New() BreakerNotifyI{
+	b := &breaker_notify{}
 	b.notifyOpen = make(chan string)
 	b.notifyHalfOpen = make(chan string)
 	b.notifyClose = make(chan string)
 	return b
 }
 
-type breaker_wrapper struct{
+type breaker_notify struct{
 	breakers		sync.Map
 	notifyOpen		chan string
 	notifyHalfOpen	chan string
 	notifyClose		chan string
 }
 
-func (this *breaker_wrapper) getBreaker(addr string) (b *gobreaker.CircuitBreaker){
+func (this *breaker_notify) getBreaker(addr string) (b *gobreaker.CircuitBreaker){
 	bI, ok := this.breakers.Load(addr)
 	if !ok {
 		st := gobreaker.Settings{}
@@ -43,7 +43,7 @@ func (this *breaker_wrapper) getBreaker(addr string) (b *gobreaker.CircuitBreake
 	return
 }
 
-func (this *breaker_wrapper) newStateChangeCb() func(name string, from, to gobreaker.State) {
+func (this *breaker_notify) newStateChangeCb() func(name string, from, to gobreaker.State) {
 	return func(name string, from, to gobreaker.State) {
 		switch from {
 		case gobreaker.StateOpen:
@@ -73,7 +73,7 @@ func (this *breaker_wrapper) newStateChangeCb() func(name string, from, to gobre
 	}
 }
 
-func (this *breaker_wrapper) GrpcUnaryClientInterceptor (ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+func (this *breaker_notify) GrpcUnaryClientInterceptor (ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	addr, err := common.GetClietIP(ctx)
 	if err != nil {
 		return err
@@ -85,14 +85,14 @@ func (this *breaker_wrapper) GrpcUnaryClientInterceptor (ctx context.Context, me
 	return err
 }
 
-func (this *breaker_wrapper) NotifyOpen() <-chan string {
+func (this *breaker_notify) NotifyOpen() <-chan string {
 	return this.notifyOpen
 }
 
-func (this *breaker_wrapper) NotifyHalfOpen() <-chan string {
+func (this *breaker_notify) NotifyHalfOpen() <-chan string {
 	return this.notifyHalfOpen
 }
 
-func (this *breaker_wrapper) NotifyClose() <-chan string {
+func (this *breaker_notify) NotifyClose() <-chan string {
 	return this.notifyClose
 }

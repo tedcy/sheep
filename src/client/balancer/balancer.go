@@ -4,7 +4,7 @@ import (
 	"google.golang.org/grpc"
 	"golang.org/x/net/context"
 	"coding.net/tedcy/sheep/src/client/balancer/weighter_balancer"
-	"coding.net/tedcy/sheep/src/client/balancer/watcher_wrapper"
+	"coding.net/tedcy/sheep/src/client/balancer/watcher_notify"
 	"coding.net/tedcy/sheep/src/watcher"
 )
 
@@ -20,14 +20,15 @@ type Balancer interface {
 
 type Balancer struct {
 	weighterBalancer	weighter_balancer.WeightBalancerI
-	watcherWrapper		watcher_wrapper.WatcherWrapperI
+	watcherNotify		watcher_notify.WatcherNotifyI
 	addressChan			chan []grpc.Address
 }
 
 func New(config *watcher.Config) (balancer *Balancer, err error){
 	balancer = &Balancer{}	
 	balancer.weighterBalancer = weighter_balancer.New()
-	balancer.watcherWrapper, err = watcher_wrapper.New(config)
+	balancer.watcherNotify, err = watcher_notify.New(config)
+	balancer.addressChan = make(chan []grpc.Address)
 	if err != nil {
 		return
 	}
@@ -35,7 +36,7 @@ func New(config *watcher.Config) (balancer *Balancer, err error){
 }
 
 func (this *Balancer) Start(target string, config grpc.BalancerConfig) (err error){
-	this.SetNotifyWatcher(this.watcherWrapper.NotifyWatcherChange(target))
+	this.SetNotifyWatcher(this.watcherNotify.NotifyWatcherChange(target))
 	return
 }
 

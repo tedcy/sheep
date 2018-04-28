@@ -1,4 +1,4 @@
-package weighter
+package weighter_notify
 
 import (
 	"golang.org/x/net/context"
@@ -13,26 +13,27 @@ const (
 	RespTimeWeighter
 )
 
-type WeighterI interface{
+type WeighterNotifyI interface{
 	GrpcUnaryClientInterceptor (ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error
 	NotifyWeighterChange() <-chan []*common.KV
 }
 
-func New(t WeighterType) WeighterI {
-	w := &weighter{}
+func New(t WeighterType) WeighterNotifyI {
+	w := &weighter_notify{}
 	w.respTime = common.NewAdder()
 	w.counts = common.NewAdder()
+	w.kvs = make(chan []*common.KV)
 	w.respTimeLooper()
 	return w
 }
 
-type weighter struct {
+type weighter_notify struct {
 	respTime	*common.Adder
 	counts		*common.Adder
 	kvs			chan []*common.KV
 }
 
-func (this *weighter) GrpcUnaryClientInterceptor (ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+func (this *weighter_notify) GrpcUnaryClientInterceptor (ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	addr, err := common.GetClietIP(ctx)
 	if err != nil {
 		return err
@@ -45,13 +46,13 @@ func (this *weighter) GrpcUnaryClientInterceptor (ctx context.Context, method st
 	return err
 }
 
-//由于weighter不知道watcher信息，所以节点数是可能大于真实节点:有节点下线
+//由于weighter_notify不知道watcher信息，所以节点数是可能大于真实节点:有节点下线
 //可能小于真实节点数，有节点新上线还没有被调度访问过
-func (this *weighter) NotifyWeighterChange() <-chan []*common.KV {
+func (this *weighter_notify) NotifyWeighterChange() <-chan []*common.KV {
 	return this.kvs
 }
 
-func (this *weighter) respTimeLooper() {
+func (this *weighter_notify) respTimeLooper() {
 	for ;; {
 		time.Sleep(time.Second * 30)
 		this.scanServers()
@@ -60,7 +61,7 @@ func (this *weighter) respTimeLooper() {
 
 //see
 //https://github.com/Netflix/ribbon/blob/master/ribbon-loadbalancer/src/main/java/com/netflix/loadbalancer/ResponseTimeWeightedRule.java
-func (this *weighter) scanServers() {
+func (this *weighter_notify) scanServers() {
 	keys := this.counts.List()
 	var avgRespTime uint64
 	var sumRespTime uint64
