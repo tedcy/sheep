@@ -5,7 +5,7 @@ import (
 	"golang.org/x/net/context"
 	"coding.net/tedcy/sheep/src/client/balancer/weighter_balancer"
 	"coding.net/tedcy/sheep/src/client/balancer/watcher_notify"
-	"coding.net/tedcy/sheep/src/watcher"
+	"time"
 )
 
 /*
@@ -22,12 +22,15 @@ type Balancer struct {
 	weighterBalancer	weighter_balancer.WeightBalancerI
 	watcherNotify		watcher_notify.WatcherNotifyI
 	addressChan			chan []grpc.Address
+	path				string
+	timeout				time.Duration
 }
 
-func New(config *watcher.Config) (balancer *Balancer, err error){
+func New(path string, timeout time.Duration) (balancer *Balancer, err error){
 	balancer = &Balancer{}	
+	balancer.path = path
+	balancer.timeout = timeout
 	balancer.weighterBalancer = weighter_balancer.New()
-	balancer.watcherNotify, err = watcher_notify.New(config)
 	balancer.addressChan = make(chan []grpc.Address)
 	if err != nil {
 		return
@@ -36,7 +39,11 @@ func New(config *watcher.Config) (balancer *Balancer, err error){
 }
 
 func (this *Balancer) Start(target string, config grpc.BalancerConfig) (err error){
-	this.SetNotifyWatcher(this.watcherNotify.NotifyWatcherChange(target))
+	this.watcherNotify, err = watcher_notify.New(target, this.path, this.timeout)
+	if err != nil {
+		return
+	}
+	this.SetNotifyWatcher(this.watcherNotify.NotifyWatcherChange())
 	return
 }
 

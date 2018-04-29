@@ -3,8 +3,8 @@ package breaker_notify
 import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 	"github.com/sony/gobreaker"
-	"coding.net/tedcy/sheep/src/common"
 	"sync"
 )
 
@@ -38,8 +38,9 @@ func (this *breaker_notify) getBreaker(addr string) (b *gobreaker.CircuitBreaker
 		st.OnStateChange = this.newStateChangeCb()
 		b = gobreaker.NewCircuitBreaker(st)
 		this.breakers.Store(addr, b)
+	}else {
+		b = bI.(*gobreaker.CircuitBreaker)
 	}
-	b = bI.(*gobreaker.CircuitBreaker)
 	return
 }
 
@@ -73,16 +74,14 @@ func (this *breaker_notify) newStateChangeCb() func(name string, from, to gobrea
 	}
 }
 
-func (this *breaker_notify) GrpcUnaryClientInterceptor (ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-	addr, err := common.GetClietIP(ctx)
-	if err != nil {
-		return err
-	}
+func (this *breaker_notify) GrpcUnaryClientInterceptor (ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) (err error) {
+	var p peer.Peer
+	opts = append(opts, grpc.Peer(&p))
+	realErr := invoker(ctx, method, req, reply, cc, opts...) 
+	addr := p.Addr.String()
 	b := this.getBreaker(addr)
-	_, err = b.Execute(func() (interface{}, error) {
-		return nil, invoker(ctx, method, req, reply, cc, opts...) 
-	})
-	return err
+	_, err = b.Execute(func() (interface{}, error) {return nil, realErr})
+	return
 }
 
 func (this *breaker_notify) NotifyOpen() <-chan string {

@@ -4,6 +4,7 @@ import (
 	"time"
 	"golang.org/x/net/context"
 	"github.com/coreos/etcd/client"
+	"strings"
 )
 
 type EtcdClient struct {
@@ -11,9 +12,15 @@ type EtcdClient struct {
 	timeout			time.Duration
 }
 
-func New(addrList []string, timeout time.Duration) (c *EtcdClient, err error) {
+func New(addrStr string, timeout time.Duration) (c *EtcdClient, err error) {
 	c = &EtcdClient{}
 	
+	var addrList []string
+	addrListTemp := strings.Split(addrStr, ",")
+	for _, addr := range addrListTemp {
+		addr = "http://" + addr
+		addrList = append(addrList, addr)	
+	}
 	config := client.Config{}
 	config.Endpoints = addrList
 	config.Transport = client.DefaultTransport
@@ -46,7 +53,7 @@ func (this *EtcdClient) List(path string) (paths []string, index uint64, err err
 		return
 	}
 	for _, node := range resp.Node.Nodes {
-		paths = append(paths, node.Key)
+		paths = append(paths, strings.TrimPrefix(node.Key, path + "/"))
 	}
 	index = resp.Index
 	return

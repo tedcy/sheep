@@ -2,15 +2,20 @@ package watcher_notify
 
 import (
 	"coding.net/tedcy/sheep/src/watcher"
+	"time"
 )
 
 type WatcherNotifyI interface{
-	NotifyWatcherChange(path string) <-chan []string
+	NotifyWatcherChange() <-chan []string
 }
 
-func New(config *watcher.Config) (WatcherNotifyI, error) {
+func New(target, path string, timeout time.Duration) (WatcherNotifyI, error) {
 	w := &watcherNotify{}
 	var err error
+	config := &watcher.Config{}
+	config.Target = target
+	config.Timeout = timeout
+	w.path = path
 	w.watcher, err = watcher.New(config)
 	if err != nil {
 		return nil, err
@@ -25,15 +30,16 @@ type watcherNotify struct {
 	path			string
 }
 
-func (this *watcherNotify) NotifyWatcherChange(path string) <-chan []string {
-	this.path = path
-	for ;; {
-		err := this.watcher.Watch(path, this.pushChan)
-		if err != nil {
-			println(err.Error())		
+func (this *watcherNotify) NotifyWatcherChange() <-chan []string {
+	go func() {
+		for ;; {
+			err := this.watcher.Watch(this.path, this.pushChan)
+			if err != nil {
+				println(err.Error())		
+			}
 		}
-	}
-	return nil
+	}()
+	return this.nodes
 }
 
 func (this *watcherNotify) pushChan() (uint64, error) {

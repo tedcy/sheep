@@ -3,6 +3,7 @@ package watcher
 import (
 	"fmt"
 	"time"
+	"strings"
 	"coding.net/tedcy/sheep/src/watcher/etcd"
 )
 
@@ -24,19 +25,23 @@ type WatcherI interface {
 }
 
 type Config struct {
-	WatcherName		string
-	AddrList		[]string
+	//etcd://ip:port,ip:port
+	Target			string
 	Timeout			time.Duration
 }
 
 func New(config *Config) (WatcherI, error){
-	switch config.WatcherName {
+	ss := strings.SplitN(config.Target, "://", 2)
+	if len(ss) != 2 {
+		return nil, fmt.Errorf("invalid watcher target %s", config.Target)
+	}
+	switch ss[0] {
 	case "etcd":
-		etcdClient,err := etcd.New(config.AddrList, config.Timeout)
+		etcdClient,err := etcd.New(ss[1], config.Timeout)
 		if err != nil {
 			return nil, err
 		}
 		return etcdClient, nil
 	}
-	return nil, fmt.Errorf("invalid watcherName %s", config.WatcherName)
+	return nil, fmt.Errorf("invalid watcherName %s", ss[0])
 }

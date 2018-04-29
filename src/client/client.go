@@ -6,29 +6,55 @@ import (
 	"coding.net/tedcy/sheep/src/client/weighter_notify"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"time"
 )
 
 type BalancerType int
 
 const (
-	Default BalancerType = iota
+	DefaultBalancer		BalancerType = iota
 	RespTimeBalancer
 )
 
-type Client struct {
+type DialConfig struct {
+	EnableBreak		bool
+	BalancerType	BalancerType	
+	Timeout			time.Duration
+	//etcd://172.16.176.38:2379,ip:port
+	Target			string
+	Path			string
+}
+
+func DialContext(ctx context.Context, config *DialConfig, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error){
+	c := &client{}
+	c.balancer, err = balancer.New(config.Path, config.Timeout)
+	if err != nil {
+		return
+	}
+	if config.EnableBreak {
+		c.enableBreak()
+	}
+	c.withBalanceType(config.BalancerType)
+	opts = append(opts, grpc.WithInsecure())
+	opts = append(opts, grpc.WithBalancer(c.balancer))
+	opts = append(opts, grpc.WithUnaryInterceptor(c.clientIntercept()))
+	conn, err = grpc.DialContext(ctx, config.Target, opts...)
+	if err != nil {
+		return
+	}
+	return
+}
+
+type client struct {
 	breaker  breaker_notify.BreakerNotifyI
-	balancer *balancer.Balancer
 	weighter weighter_notify.WeighterNotifyI
+	balancer *balancer.Balancer
 	//打开熔断器时插入aop
 	//使用balance返回aop不为空就插入
 	intercepts []grpc.UnaryClientInterceptor
 }
 
-func New() (*Client, error) {
-	return &Client{}, nil
-}
-
-func (this *Client) EnableBreak() {
+func (this *client) enableBreak() {
 	this.breaker = breaker_notify.New()
 	this.balancer.SetNotifyOpen(this.breaker.NotifyOpen())
 	this.balancer.SetNotifyClose(this.breaker.NotifyClose())
@@ -36,7 +62,7 @@ func (this *Client) EnableBreak() {
 	this.intercepts = append(this.intercepts, this.breaker.GrpcUnaryClientInterceptor)
 }
 
-func (this *Client) WithBalanceType(t BalancerType) {
+func (this *client) withBalanceType(t BalancerType) {
 	switch t {
 	case RespTimeBalancer:
 		this.weighter = weighter_notify.New(weighter_notify.RespTimeWeighter)
@@ -45,17 +71,7 @@ func (this *Client) WithBalanceType(t BalancerType) {
 	this.intercepts = append(this.intercepts, this.weighter.GrpcUnaryClientInterceptor)
 }
 
-func (this *Client) DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error){
-	opts = append(opts, grpc.WithBalancer(this.balancer))
-	opts = append(opts, grpc.WithUnaryInterceptor(this.clientIntercept()))
-	conn, err = grpc.DialContext(ctx, target, opts...)
-	if err != nil {
-		return
-	}
-	return
-}
-
-func (this *Client) clientIntercept() grpc.UnaryClientInterceptor {
+func (this *client) clientIntercept() grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, handler grpc.UnaryInvoker, opts ...grpc.CallOption) (err error) {
 		var index int
 		index = -1

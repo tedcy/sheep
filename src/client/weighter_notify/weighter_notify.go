@@ -3,6 +3,7 @@ package weighter_notify
 import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 	"coding.net/tedcy/sheep/src/common"
 	"time"
 )
@@ -23,7 +24,7 @@ func New(t WeighterType) WeighterNotifyI {
 	w.respTime = common.NewAdder()
 	w.counts = common.NewAdder()
 	w.kvs = make(chan []*common.KV)
-	w.respTimeLooper()
+	go w.respTimeLooper()
 	return w
 }
 
@@ -33,17 +34,16 @@ type weighter_notify struct {
 	kvs			chan []*common.KV
 }
 
-func (this *weighter_notify) GrpcUnaryClientInterceptor (ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-	addr, err := common.GetClietIP(ctx)
-	if err != nil {
-		return err
-	}
+func (this *weighter_notify) GrpcUnaryClientInterceptor (ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) (err error) {
 	t := time.Now()
+	var p peer.Peer
+	opts = append(opts, grpc.Peer(&p))
 	err = invoker(ctx, method, req, reply, cc, opts...) 
 	delta := time.Now().Sub(t)
+	addr := p.Addr.String()
 	this.respTime.Add(addr, uint64(delta / time.Millisecond))
 	this.counts.Add(addr, 1)
-	return err
+	return
 }
 
 //由于weighter_notify不知道watcher信息，所以节点数是可能大于真实节点:有节点下线

@@ -2,7 +2,7 @@ package common
 
 import (
 	"google.golang.org/grpc/peer"
-	"golang.org/x/net/context"
+	//"golang.org/x/net/context"
 	"fmt"
 	"net"
 	"strings"
@@ -13,7 +13,17 @@ type KV struct {
 	Weight	int
 }
 
-func GetClietIP(ctx context.Context) (string, error) {
+func GetClietIP(pr *peer.Peer) (string, error) {
+	//return "127.0.0.1:50051", nil
+    if pr.Addr == net.Addr(nil) {
+        return "", fmt.Errorf("[getClientIP] peer.Addr is nil")
+    }
+    addSlice := strings.Split(pr.Addr.String(), ":")
+    return addSlice[0], nil
+}
+
+/*func GetClietIP(ctx context.Context) (string, error) {
+	//return "127.0.0.1:50051", nil
     pr, ok := peer.FromContext(ctx)
     if !ok {
         return "", fmt.Errorf("[getClinetIP] invoke FromContext() failed")
@@ -23,4 +33,4 @@ func GetClietIP(ctx context.Context) (string, error) {
     }
     addSlice := strings.Split(pr.Addr.String(), ":")
     return addSlice[0], nil
-}
+}*/
