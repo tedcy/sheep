@@ -40,9 +40,13 @@ func (this *weighter_notify) GrpcUnaryClientInterceptor (ctx context.Context, me
 	opts = append(opts, grpc.Peer(&p))
 	err = invoker(ctx, method, req, reply, cc, opts...) 
 	delta := time.Now().Sub(t)
-	addr := p.Addr.String()
-	this.respTime.Add(addr, uint64(delta / time.Millisecond))
-	this.counts.Add(addr, 1)
+	if grpc.ErrorDesc(err) != common.ErrNoAvailableClients.Error() {
+		addr := p.Addr.String()
+		this.respTime.Add(addr, uint64(delta / time.Millisecond))
+		this.counts.Add(addr, 1)
+		return
+	}
+	//当没有节点时不进行时间统计
 	return
 }
 
@@ -70,6 +74,11 @@ func (this *weighter_notify) scanServers() {
 		avgRespTime = this.respTime.Get(key) / this.counts.Get(key)
 		sumRespTime += avgRespTime
 		ss[key] = avgRespTime
+	}
+	if sumRespTime == 0 {
+		//所有节点都被断流时等下一轮统计
+		println("wait next time")
+		return
 	}
 	this.respTime.Clean()
 	this.counts.Clean()

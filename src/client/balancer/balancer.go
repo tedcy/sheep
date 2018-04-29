@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/context"
 	"coding.net/tedcy/sheep/src/client/balancer/weighter_balancer"
 	"coding.net/tedcy/sheep/src/client/balancer/watcher_notify"
+	"coding.net/tedcy/sheep/src/common"
 	"time"
 )
 
@@ -51,7 +52,11 @@ func (this *Balancer) Up(addr grpc.Address) (down func(error)) {
 	return nil
 }
 func (this *Balancer) Get(ctx context.Context, opts grpc.BalancerGetOptions) (addr grpc.Address, put func(), err error) {
-	addr.Addr = this.weighterBalancer.Get()
+	var ok bool
+	addr.Addr, ok = this.weighterBalancer.Get()
+	if !ok {
+		err = common.ErrNoAvailableClients
+	}
 	return
 }
 func (this *Balancer) Notify() <-chan []grpc.Address {

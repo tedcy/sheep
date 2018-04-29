@@ -17,7 +17,7 @@ const (
 
 type WeightBalancerI interface{
 	//choose
-	Get() (key string)
+	Get() (key string, ok bool)
 	
 	//watcher
 	UpdateAllWithoutWeight(keys []string)
@@ -81,17 +81,20 @@ func (this *balancer) updateWeightEndPool() {
 
 //update的任何数据会生成weight池用于get
 //生成weight池需要加写锁，get为读锁
-func (this *balancer) Get() string{
+func (this *balancer) Get() (string, bool){
 	this.rwlock.RLock()
 	defer this.rwlock.RUnlock()
+	if this.weightSum == 0 {
+		return "", false
+	}
 	r := int(this.rand.Uint32()) % this.weightSum
 	for _, node := range this.weightEndPool {
 		if node.weightEnd > r {
-			return node.node.key
+			return node.node.key, true
 		}
 	}
-	panic("wtf")
-	return ""
+	panic("")
+	return "", false
 }
 
 func (this *balancer) getEnableAvg(data map[string]*weightNode) int {

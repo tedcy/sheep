@@ -5,6 +5,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 	"github.com/sony/gobreaker"
+	"coding.net/tedcy/sheep/src/common"
 	"sync"
 )
 
@@ -78,9 +79,14 @@ func (this *breaker_notify) GrpcUnaryClientInterceptor (ctx context.Context, met
 	var p peer.Peer
 	opts = append(opts, grpc.Peer(&p))
 	realErr := invoker(ctx, method, req, reply, cc, opts...) 
-	addr := p.Addr.String()
-	b := this.getBreaker(addr)
-	_, err = b.Execute(func() (interface{}, error) {return nil, realErr})
+	if grpc.ErrorDesc(realErr) != common.ErrNoAvailableClients.Error() {
+		addr := p.Addr.String()
+		b := this.getBreaker(addr)
+		_, err = b.Execute(func() (interface{}, error) {return nil, realErr})
+		return
+	}
+	//当没有节点时不进行断流//直接返回报错信息相当于直接熔断了
+	err = realErr
 	return
 }
 

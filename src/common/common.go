@@ -5,8 +5,11 @@ import (
 	//"golang.org/x/net/context"
 	"fmt"
 	"net"
+	"errors"
 	"strings"
 )
+
+var ErrNoAvailableClients = errors.New("no available clients")
 
 type KV struct {
 	Key		string
