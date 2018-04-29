@@ -47,7 +47,9 @@ func (this *EtcdClient) Read(path string) (data []byte,err error) {
 }
 func (this *EtcdClient) List(path string) (paths []string, index uint64, err error) {
 	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, this.timeout)
+	if this.timeout != 0 {
+		ctx, _ = context.WithTimeout(ctx, this.timeout)
+	}
 	resp, err := this.kapi.Get(ctx, path, nil)
 	if err != nil {
 		return

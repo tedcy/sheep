@@ -5,6 +5,7 @@ import (
 	"time"
 	"strings"
 	"coding.net/tedcy/sheep/src/watcher/etcd"
+	"coding.net/tedcy/sheep/src/watcher/test"
 )
 
 type WatcherI interface {
@@ -42,6 +43,8 @@ func New(config *Config) (WatcherI, error){
 			return nil, err
 		}
 		return etcdClient, nil
+	case "test":
+		return test.New(), nil
 	}
 	return nil, fmt.Errorf("invalid watcherName %s", ss[0])
 }

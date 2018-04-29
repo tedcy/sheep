@@ -37,6 +37,7 @@ func (this *watcherNotify) NotifyWatcherChange() <-chan []string {
 			if err != nil {
 				println(err.Error())		
 			}
+			time.Sleep(time.Second)
 		}
 	}()
 	return this.nodes
