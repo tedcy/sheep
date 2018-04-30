@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-type server struct{
+type server struct {
 	cb func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)
 }
 
@@ -19,10 +19,10 @@ func defaultCb(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)
 }
 
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	return s.cb(ctx, in) 
+	return s.cb(ctx, in)
 }
 
-func newserver(port string, cb func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)) (serverDone <-chan struct{}){
+func newserver(port string, cb func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)) (serverDone chan struct{}) {
 	realS := &server{}
 	realS.cb = cb
 	lis, err := net.Listen("tcp", port)
@@ -32,7 +32,7 @@ func newserver(port string, cb func(ctx context.Context, in *pb.HelloRequest) (*
 	s := grpc.NewServer()
 	pb.RegisterGreeterServer(s, realS)
 	reflection.Register(s)
-	serverDone = make(<-chan struct{})
+	serverDone = make(chan struct{})
 	go func() {
 		<-serverDone
 		s.Stop()

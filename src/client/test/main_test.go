@@ -1,12 +1,12 @@
 package main
 
 import (
-	"testing"
-	"coding.net/tedcy/sheep/src/watcher/test"
 	"coding.net/tedcy/sheep/src/client"
+	"coding.net/tedcy/sheep/src/watcher/test"
+	"testing"
 )
 
-var listNotify = make(chan[]string)
+var listNotify = make(chan []string)
 var watchNotify = make(chan struct{})
 
 func init() {
@@ -15,10 +15,11 @@ func init() {
 }
 
 func Test_WatcherInit(t *testing.T) {
-	newserver(":50051", defaultCb)
+	serverdone := newserver(":50051", defaultCb)
+	defer close(serverdone)
 	go func() {
-		go func(){listNotify <- []string{"127.0.0.1:50051"}}()
-		go func(){watchNotify <- struct{}{}}()
+		go func() { listNotify <- []string{"127.0.0.1:50051"} }()
+		go func() { watchNotify <- struct{}{} }()
 	}()
 	c := &client.DialConfig{}
 	err := newClient(c)
