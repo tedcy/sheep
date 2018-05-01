@@ -1,8 +1,8 @@
 package balancer
 
 import (
-	"google.golang.org/grpc"
 	"coding.net/tedcy/sheep/src/common"
+	"google.golang.org/grpc"
 )
 
 //watcher
@@ -13,13 +13,13 @@ func (this *Balancer) SetNotifyWatcher(notify <-chan []string) {
 			//通知grpc
 			var addrs []grpc.Address
 			for _, key := range nodes {
-				addr := grpc.Address{}	
+				addr := grpc.Address{}
 				addr.Addr = key
 				addrs = append(addrs, addr)
 			}
 			this.addressChan <- addrs
 		}
-    }()
+	}()
 }
 
 //weighter
@@ -35,7 +35,7 @@ func (this *Balancer) SetNotifyWeighterChange(notify <-chan []*common.KV) {
 func (this *Balancer) SetNotifyOpen(notify <-chan string) {
 	go func() {
 		for node := range notify {
-			this.weighterBalancer.Enable(node)
+			this.weighterBalancer.Disable(node)
 		}
 	}()
 }
@@ -43,7 +43,7 @@ func (this *Balancer) SetNotifyOpen(notify <-chan string) {
 func (this *Balancer) SetNotifyClose(notify <-chan string) {
 	go func() {
 		for node := range notify {
-			this.weighterBalancer.Disable(node)
+			this.weighterBalancer.Enable(node)
 		}
 	}()
 }

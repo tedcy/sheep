@@ -1,30 +1,31 @@
 package weighter_balancer
+
 //加权选择器
 
 import (
-	"coding.net/tedcy/sheep/src/common"	
-	"sync"
-	"math/rand"
-	"time"
+	"coding.net/tedcy/sheep/src/common"
 	"fmt"
+	"math/rand"
+	"sync"
+	"time"
 )
 
 //default weight = allweight / count
 const (
-	unsetWeight = -1
+	unsetWeight   = -1
 	defaultWeight = 1
 )
 
-type WeightBalancerI interface{
+type WeightBalancerI interface {
 	//choose
 	Get() (key string, ok bool)
-	
+
 	//watcher
 	UpdateAllWithoutWeight(keys []string)
-	
+
 	//weighter
 	UpdateAll(kvs []*common.KV)
-	
+
 	//breaker
 	//重新有效后变成初始值
 	Enable(key string)
@@ -40,22 +41,22 @@ func New() WeightBalancerI {
 }
 
 type balancer struct {
-	rand			*rand.Rand
-	data			map[string]*weightNode
-	weightEndPool	[]*weightEndPoolNode
-	weightSum		int
-	rwlock			sync.RWMutex
+	rand          *rand.Rand
+	data          map[string]*weightNode
+	weightEndPool []*weightEndPoolNode
+	weightSum     int
+	rwlock        sync.RWMutex
 }
 
 type weightNode struct {
-	key			string
-	weight		int
-	enable		bool
+	key    string
+	weight int
+	enable bool
 }
 
 type weightEndPoolNode struct {
-	weightEnd	int
-	node		*weightNode
+	weightEnd int
+	node      *weightNode
 }
 
 func (this *balancer) updateWeightEndPool() {
@@ -74,6 +75,7 @@ func (this *balancer) updateWeightEndPool() {
 	}
 	this.weightEndPool = weightEndPool
 	this.weightSum = weightSoFar
+	fmt.Println("updateWeightEnd")
 	for _, node := range this.weightEndPool {
 		fmt.Println(node.node.key, "-", node.weightEnd)
 	}
@@ -81,7 +83,7 @@ func (this *balancer) updateWeightEndPool() {
 
 //update的任何数据会生成weight池用于get
 //生成weight池需要加写锁，get为读锁
-func (this *balancer) Get() (string, bool){
+func (this *balancer) Get() (string, bool) {
 	this.rwlock.RLock()
 	defer this.rwlock.RUnlock()
 	if this.weightSum == 0 {
@@ -110,7 +112,7 @@ func (this *balancer) getEnableAvg(data map[string]*weightNode) int {
 	}
 	if count != 0 {
 		avg = sum / count
-	}else {
+	} else {
 		avg = defaultWeight
 	}
 	return avg
@@ -135,7 +137,7 @@ func (this *balancer) UpdateAllWithoutWeight(keys []string) {
 		}
 		data[key] = wn
 	}
-	avg := this.getEnableAvg(data)	
+	avg := this.getEnableAvg(data)
 	//新节点设置为平均值
 	for _, wn = range data {
 		if wn.weight == unsetWeight {
@@ -172,7 +174,7 @@ func (this *balancer) Enable(key string) {
 		wn.weight = unsetWeight
 		wn.weight = this.getEnableAvg(this.data)
 		this.updateWeightEndPool()
-    }
+	}
 }
 
 func (this *balancer) Disable(key string) {

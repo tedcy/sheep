@@ -2,7 +2,7 @@ package test
 
 var g_test test
 
-func New() *test{
+func New() *test {
 	return &g_test
 }
 
@@ -26,12 +26,12 @@ func SetList(list func(path string) (paths []string, index uint64, err error)) {
 	g_test.list = list
 }
 
-func SetWatch(watch func(path string, cb func() (uint64, error)) (err error)){
+func SetWatch(watch func(path string, cb func() (uint64, error)) (err error)) {
 	g_test.watch = watch
 }
 
 type test struct {
-	list func(path string) (paths []string, index uint64, err error)
+	list  func(path string) (paths []string, index uint64, err error)
 	watch func(path string, cb func() (uint64, error)) (err error)
 }
 
@@ -41,7 +41,7 @@ func (this *test) Create(path string, data []byte) (err error) {
 func (this *test) Delete(path string) (err error) {
 	return
 }
-func (this *test) Read(path string) (data []byte,err error) {
+func (this *test) Read(path string) (data []byte, err error) {
 	return
 }
 func (this *test) List(path string) (paths []string, index uint64, err error) {
@@ -58,4 +58,7 @@ func (this *test) CreateEphemeral(path string, data []byte) (err error) {
 }
 func (this *test) CreateEphemeralInOrder(path string, data []byte) (err error) {
 	return
+}
+func (this *test) Close() error {
+	return nil
 }

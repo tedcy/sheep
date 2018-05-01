@@ -4,10 +4,12 @@ import (
 	"log"
 	"net"
 
+	"fmt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"google.golang.org/grpc/reflection"
+	"time"
 )
 
 type server struct {
@@ -16,6 +18,30 @@ type server struct {
 
 func defaultCb(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
+}
+
+func slowCb(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	time.Sleep(time.Millisecond * 50)
+	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
+}
+
+func errCb(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	return nil, fmt.Errorf("test err")
+}
+
+func afterTimeErr2Success() func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	t := time.NewTimer(time.Second * 50)
+	var b bool
+	go func() {
+		<-t.C
+		b = true
+	}()
+	return func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+		if b {
+			return slowCb(ctx, in)
+		}
+		return errCb(ctx, in)
+	}
 }
 
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {

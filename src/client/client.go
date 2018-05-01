@@ -12,22 +12,24 @@ import (
 type BalancerType int
 
 const (
-	DefaultBalancer		BalancerType = iota
+	DefaultBalancer BalancerType = iota
 	RespTimeBalancer
 )
 
 type DialConfig struct {
-	EnableBreak		bool
-	BalancerType	BalancerType	
-	Timeout			time.Duration
+	EnableBreak  bool
+	BalancerType BalancerType
+	Timeout      time.Duration
 	//etcd://172.16.176.38:2379,ip:port
-	Target			string
-	Path			string
+	Target string
+	Path   string
+	ctx    context.Context
 }
 
-func DialContext(ctx context.Context, config *DialConfig, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error){
+func DialContext(ctx context.Context, config *DialConfig, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
 	c := &client{}
-	c.balancer, err = balancer.New(config.Path, config.Timeout)
+	c.ctx = ctx
+	c.Balancer, err = balancer.New(ctx, config.Path, config.Timeout)
 	if err != nil {
 		return
 	}
@@ -36,7 +38,7 @@ func DialContext(ctx context.Context, config *DialConfig, opts ...grpc.DialOptio
 	}
 	c.withBalanceType(config.BalancerType)
 	opts = append(opts, grpc.WithInsecure())
-	opts = append(opts, grpc.WithBalancer(c.balancer))
+	opts = append(opts, grpc.WithBalancer(c))
 	opts = append(opts, grpc.WithUnaryInterceptor(c.clientIntercept()))
 	conn, err = grpc.DialContext(ctx, config.Target, opts...)
 	if err != nil {
@@ -46,28 +48,29 @@ func DialContext(ctx context.Context, config *DialConfig, opts ...grpc.DialOptio
 }
 
 type client struct {
+	*balancer.Balancer
 	breaker  breaker_notify.BreakerNotifyI
 	weighter weighter_notify.WeighterNotifyI
-	balancer *balancer.Balancer
 	//打开熔断器时插入aop
 	//使用balance返回aop不为空就插入
 	intercepts []grpc.UnaryClientInterceptor
+	ctx        context.Context
 }
 
 func (this *client) enableBreak() {
 	this.breaker = breaker_notify.New()
-	this.balancer.SetNotifyOpen(this.breaker.NotifyOpen())
-	this.balancer.SetNotifyClose(this.breaker.NotifyClose())
-	this.balancer.SetNotifyHalfOpen(this.breaker.NotifyHalfOpen())
+	this.Balancer.SetNotifyOpen(this.breaker.NotifyOpen())
+	this.Balancer.SetNotifyClose(this.breaker.NotifyClose())
+	this.Balancer.SetNotifyHalfOpen(this.breaker.NotifyHalfOpen())
 	this.intercepts = append(this.intercepts, this.breaker.GrpcUnaryClientInterceptor)
 }
 
 func (this *client) withBalanceType(t BalancerType) {
 	switch t {
 	case RespTimeBalancer:
-		this.weighter = weighter_notify.New(weighter_notify.RespTimeWeighter)
+		this.weighter = weighter_notify.New(this.ctx, weighter_notify.RespTimeWeighter)
 	}
-	this.balancer.SetNotifyWeighterChange(this.weighter.NotifyWeighterChange())
+	this.Balancer.SetNotifyWeighterChange(this.weighter.NotifyWeighterChange())
 	this.intercepts = append(this.intercepts, this.weighter.GrpcUnaryClientInterceptor)
 }
 
@@ -86,4 +89,21 @@ func (this *client) clientIntercept() grpc.UnaryClientInterceptor {
 		}
 		return i(ctx, method, req, reply, cc, opts...)
 	}
+}
+
+//will call by grpc.ClientConn Close()
+func (this *client) Close() (err error) {
+	err = this.breaker.Close()
+	if err != nil {
+		println(err)
+	}
+	err = this.weighter.Close()
+	if err != nil {
+		println(err)
+	}
+	err = this.Balancer.Close()
+	if err != nil {
+		println(err.Error())
+	}
+	return nil
 }

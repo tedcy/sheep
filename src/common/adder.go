@@ -1,12 +1,12 @@
 package common
 
 import (
-	"sync/atomic"
 	"sync"
+	"sync/atomic"
 )
 
 type Adder struct {
-	data		*sync.Map
+	data *sync.Map
 }
 
 func NewAdder() *Adder {
@@ -16,17 +16,15 @@ func NewAdder() *Adder {
 }
 
 func (this *Adder) Add(key string, addValue uint64) {
-	valuePtr, ok := this.data.Load(key)
-	if !ok {
-		this.data.Store(key, &addValue)
-		return
-	}
-	valueIntPtr, ok := valuePtr.(*uint64)
+	valuePtr, ok := this.data.LoadOrStore(key, &addValue)
 	if ok {
-		atomic.AddUint64(valueIntPtr, addValue)
-		return
+		valueIntPtr, ok := valuePtr.(*uint64)
+		if ok {
+			atomic.AddUint64(valueIntPtr, addValue)
+			return
+		}
+		panic("invalid ptr")
 	}
-	panic("invalid ptr")
 	return
 }
 
@@ -44,7 +42,7 @@ func (this *Adder) Get(key string) uint64 {
 }
 
 func (this *Adder) List() (keys []string) {
-	this.data.Range(func (key,value interface{}) bool {
+	this.data.Range(func(key, value interface{}) bool {
 		keys = append(keys, key.(string))
 		return true
 	})
