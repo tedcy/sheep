@@ -96,6 +96,18 @@ func callOnce(conn *grpc.ClientConn) error {
 	return nil
 }
 
+func benchmark_callOnce(conn *grpc.ClientConn) error {
+	realConn := pb.NewGreeterClient(conn)
+	resp, err := realConn.SayHello(context.Background(), &pb.HelloRequest{Name: "name"})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	_ = resp
+	//fmt.Println("resp: " + resp.Message)
+	return nil
+}
+
 func callUntilOk(conn *grpc.ClientConn) {
 	for {
 		err := callOnce(conn)

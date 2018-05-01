@@ -69,9 +69,13 @@ func (this *client) withBalanceType(t BalancerType) {
 	switch t {
 	case RespTimeBalancer:
 		this.weighter = weighter_notify.New(this.ctx, weighter_notify.RespTimeWeighter)
+	case DefaultBalancer:
+		this.weighter = weighter_notify.New(this.ctx, weighter_notify.DefaultWeighter)
 	}
-	this.Balancer.SetNotifyWeighterChange(this.weighter.NotifyWeighterChange())
-	this.intercepts = append(this.intercepts, this.weighter.GrpcUnaryClientInterceptor)
+	if this.weighter != nil {
+		this.Balancer.SetNotifyWeighterChange(this.weighter.NotifyWeighterChange())
+		this.intercepts = append(this.intercepts, this.weighter.GrpcUnaryClientInterceptor)
+	}
 }
 
 func (this *client) clientIntercept() grpc.UnaryClientInterceptor {
@@ -93,13 +97,17 @@ func (this *client) clientIntercept() grpc.UnaryClientInterceptor {
 
 //will call by grpc.ClientConn Close()
 func (this *client) Close() (err error) {
-	err = this.breaker.Close()
-	if err != nil {
-		println(err)
+	if this.breaker != nil {
+		err = this.breaker.Close()
+		if err != nil {
+			println(err)
+		}
 	}
-	err = this.weighter.Close()
-	if err != nil {
-		println(err)
+	if this.weighter != nil {
+		err = this.weighter.Close()
+		if err != nil {
+			println(err)
+		}
 	}
 	err = this.Balancer.Close()
 	if err != nil {

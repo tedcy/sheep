@@ -11,7 +11,7 @@ import (
 type WeighterType int
 
 const (
-	Default WeighterType = iota
+	DefaultWeighter		 WeighterType = iota
 	RespTimeWeighter
 )
 
@@ -22,6 +22,9 @@ type WeighterNotifyI interface {
 }
 
 func New(ctx context.Context, t WeighterType) WeighterNotifyI {
+	if t == DefaultWeighter {
+		return nil
+	}
 	w := &weighter_notify{}
 	w.respTime = common.NewAdder()
 	w.counts = common.NewAdder()
