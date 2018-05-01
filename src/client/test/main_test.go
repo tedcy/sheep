@@ -11,6 +11,7 @@ var listNotify = make(chan []string)
 var watchNotify = make(chan struct{})
 
 func reinit() {
+	time.Sleep(time.Second)
 	reinitAddrMap()
 	close(listNotify)
 	close(watchNotify)

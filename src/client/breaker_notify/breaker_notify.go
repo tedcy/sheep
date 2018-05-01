@@ -80,7 +80,7 @@ func (this *breaker_notify) GrpcUnaryClientInterceptor(ctx context.Context, meth
 	var p peer.Peer
 	opts = append(opts, grpc.Peer(&p))
 	realErr := invoker(ctx, method, req, reply, cc, opts...)
-	if grpc.ErrorDesc(realErr) != common.ErrNoAvailableClients.Error() {
+	if realErr == nil || grpc.ErrorDesc(realErr) != common.ErrNoAvailableClients.Error() {
 		addr := p.Addr.String()
 		b := this.getBreaker(addr)
 		_, err = b.Execute(func() (interface{}, error) { return nil, realErr })
