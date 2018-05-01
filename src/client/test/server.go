@@ -20,6 +20,13 @@ func defaultCb(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
 }
 
+func createSlowCb(t time.Duration) func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	return func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+		time.Sleep(t)
+		return &pb.HelloReply{Message: "Hello " + in.Name}, nil
+	}
+}
+
 func slowCb(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
 	time.Sleep(time.Millisecond * 50)
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil

@@ -4,6 +4,7 @@ import (
 	"coding.net/tedcy/sheep/src/client"
 	"coding.net/tedcy/sheep/src/watcher/test"
 	"testing"
+	"time"
 )
 
 var listNotify = make(chan []string)
@@ -51,6 +52,7 @@ func Test_WatcherChange(t *testing.T) {
 
 //服务器故障导致开路
 func Test_BreakerOpen(t *testing.T) {
+	count := 1000
 	reinit()
 	addList([]string{"127.0.0.1:50051", "127.0.0.1:50052"})
 	serverdone := newserver(":50051", defaultCb)
@@ -58,12 +60,12 @@ func Test_BreakerOpen(t *testing.T) {
 	serverdone = newserver(":50052", errCb)
 	defer close(serverdone)
 	c := &client.DialConfig{}
-	newClient(1000, c)
+	newClient(count, c)
 	printResult()
 	count1 := getAddr("127.0.0.1:50051")
 	//count2 := getAddr("127.0.0.1:50052")
-	if count1 < 800 {
-		t.Fatalf("defaultCb's calls %d can't smaller than 8000", count1)
+	if count1 < int64(float64(count)*0.8) {
+		t.Fatalf("defaultCb's calls %d can't smaller than count*0.8", count1)
 	}
 }
 
@@ -71,6 +73,7 @@ func Test_BreakerOpen(t *testing.T) {
 //bug:底层库必须调用的时候才判断超过多少时间变成开路状态
 //测试正常的话是server2被开路，半开路，变成闭路
 func Test_BreakerHalfOpen(t *testing.T) {
+	count := 2000
 	reinit()
 	addList([]string{"127.0.0.1:50051", "127.0.0.1:50052"})
 	serverdone := newserver(":50051", slowCb)
@@ -78,29 +81,30 @@ func Test_BreakerHalfOpen(t *testing.T) {
 	serverdone = newserver(":50052", afterTimeErr2Success())
 	defer close(serverdone)
 	c := &client.DialConfig{}
-	newClient(2000, c)
+	newClient(count, c)
 	printResult()
 	//count1 := getAddr("127.0.0.1:50051")
 	count2 := getAddr("127.0.0.1:50052")
-	if count2 < 100 {
-		t.Fatalf("defaultCb's calls %d can't smaller than 100", count2)
+	if count2 < int64(float64(count)*0.05) {
+		t.Fatalf("defaultCb's calls %d can't smaller than count*0.05", count2)
 	}
 }
 
 //服务器时延变化
 func Test_WeightChange(t *testing.T) {
+	count := 1000
 	reinit()
 	addList([]string{"127.0.0.1:50051", "127.0.0.1:50052"})
-	serverdone := newserver(":50051", defaultCb)
+	serverdone := newserver(":50051", createSlowCb(time.Millisecond*50))
 	defer close(serverdone)
-	serverdone = newserver(":50052", slowCb)
+	serverdone = newserver(":50052", createSlowCb(time.Millisecond*100))
 	defer close(serverdone)
 	c := &client.DialConfig{}
-	newClient(1000, c)
+	newClient(count, c)
 	printResult()
 	//count1 := getAddr("127.0.0.1:50051")
 	count2 := getAddr("127.0.0.1:50052")
-	if count2 > 200 {
-		t.Fatalf("slowCb's calls %d can't bigger than 200", count2)
+	if count2 > int64(float64(count)*0.5) {
+		t.Fatalf("slowCb's calls %d can't bigger than sum*0.5", count2)
 	}
 }
