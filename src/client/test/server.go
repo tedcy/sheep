@@ -1,4 +1,4 @@
-package main
+package test
 
 import (
 	"log"
@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
-	"google.golang.org/grpc/reflection"
+	//"google.golang.org/grpc/reflection"
 	"time"
 )
 
@@ -16,8 +16,13 @@ type server struct {
 	cb func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)
 }
 
+var gResp *pb.HelloReply = &pb.HelloReply{Message: "Hello"}
+func DefaultCb(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	return gResp, nil
+}
+
 func defaultCb(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
+	return gResp, nil
 }
 
 func createSlowCb(t time.Duration) func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
@@ -55,16 +60,16 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 	return s.cb(ctx, in)
 }
 
-func newserver(port string, cb func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)) (serverDone chan struct{}) {
+func Newserver(port string, cb func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)) (serverDone chan struct{}) {
 	realS := &server{}
 	realS.cb = cb
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.MaxConcurrentStreams(10000))
 	pb.RegisterGreeterServer(s, realS)
-	reflection.Register(s)
+	//reflection.Register(s)
 	serverDone = make(chan struct{})
 	go func() {
 		<-serverDone

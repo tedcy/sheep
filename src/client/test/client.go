@@ -1,4 +1,4 @@
-package main
+package test
 
 import (
 	"coding.net/tedcy/sheep/src/client"
@@ -46,7 +46,7 @@ func printResult() {
 	return
 }
 
-func cpConfig(config *client.DialConfig) (c *client.DialConfig) {
+func CpConfig(config *client.DialConfig) (c *client.DialConfig) {
 	c = &client.DialConfig{}
 	c.EnableBreak = true
 	c.BalancerType = client.RespTimeBalancer
@@ -64,7 +64,7 @@ func cpConfig(config *client.DialConfig) (c *client.DialConfig) {
 }
 
 func newClient(callCounts int, config *client.DialConfig) error {
-	c := cpConfig(config)
+	c := CpConfig(config)
 	conn, err := client.DialContext(context.Background(), c)
 	if err != nil {
 		panic(err)
@@ -96,15 +96,9 @@ func callOnce(conn *grpc.ClientConn) error {
 	return nil
 }
 
-func benchmark_callOnce(conn *grpc.ClientConn) error {
-	realConn := pb.NewGreeterClient(conn)
-	resp, err := realConn.SayHello(context.Background(), &pb.HelloRequest{Name: "name"})
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	_ = resp
-	//fmt.Println("resp: " + resp.Message)
+var gReq *pb.HelloRequest = &pb.HelloRequest{Name: "name"}
+func B_callOnce(conn *grpc.ClientConn) error {
+	pb.NewGreeterClient(conn).SayHello(context.Background(), gReq)
 	return nil
 }
 

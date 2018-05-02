@@ -1,4 +1,4 @@
-package main
+package test
 
 import (
 	"coding.net/tedcy/sheep/src/client"
@@ -10,7 +10,7 @@ import (
 var listNotify = make(chan []string)
 var watchNotify = make(chan struct{})
 
-func reinit() {
+func Reinit() {
 	time.Sleep(time.Second)
 	reinitAddrMap()
 	close(listNotify)
@@ -21,15 +21,15 @@ func reinit() {
 	test.DefaultWatch(watchNotify)
 }
 
-func addList(list []string) {
+func AddList(list []string) {
 	go func() { listNotify <- list }()
 	go func() { watchNotify <- struct{}{} }()
 }
 
 func Test_WatcherInit(t *testing.T) {
-	reinit()
-	addList([]string{"127.0.0.1:50051"})
-	serverdone := newserver(":50051", defaultCb)
+	Reinit()
+	AddList([]string{"127.0.0.1:50051"})
+	serverdone := Newserver(":50051", defaultCb)
 	defer close(serverdone)
 	c := &client.DialConfig{}
 	err := newClient(1, c)
@@ -39,10 +39,10 @@ func Test_WatcherInit(t *testing.T) {
 }
 
 func Test_WatcherChange(t *testing.T) {
-	reinit()
-	addList([]string{"127.0.0.1:50051"})
-	addList([]string{"127.0.0.1:50052"})
-	serverdone := newserver(":50052", defaultCb)
+	Reinit()
+	AddList([]string{"127.0.0.1:50051"})
+	AddList([]string{"127.0.0.1:50052"})
+	serverdone := Newserver(":50052", defaultCb)
 	defer close(serverdone)
 	c := &client.DialConfig{}
 	err := newClient(1, c)
@@ -54,11 +54,11 @@ func Test_WatcherChange(t *testing.T) {
 //服务器故障导致开路
 func Test_BreakerOpen(t *testing.T) {
 	count := 1000
-	reinit()
-	addList([]string{"127.0.0.1:50051", "127.0.0.1:50052"})
-	serverdone := newserver(":50051", defaultCb)
+	Reinit()
+	AddList([]string{"127.0.0.1:50051", "127.0.0.1:50052"})
+	serverdone := Newserver(":50051", defaultCb)
 	defer close(serverdone)
-	serverdone = newserver(":50052", errCb)
+	serverdone = Newserver(":50052", errCb)
 	defer close(serverdone)
 	c := &client.DialConfig{}
 	newClient(count, c)
@@ -75,11 +75,11 @@ func Test_BreakerOpen(t *testing.T) {
 //测试正常的话是server2被开路，半开路，变成闭路
 func Test_BreakerHalfOpen(t *testing.T) {
 	count := 2000
-	reinit()
-	addList([]string{"127.0.0.1:50051", "127.0.0.1:50052"})
-	serverdone := newserver(":50051", slowCb)
+	Reinit()
+	AddList([]string{"127.0.0.1:50051", "127.0.0.1:50052"})
+	serverdone := Newserver(":50051", slowCb)
 	defer close(serverdone)
-	serverdone = newserver(":50052", afterTimeErr2Success())
+	serverdone = Newserver(":50052", afterTimeErr2Success())
 	defer close(serverdone)
 	c := &client.DialConfig{}
 	newClient(count, c)
@@ -94,11 +94,11 @@ func Test_BreakerHalfOpen(t *testing.T) {
 //服务器时延变化
 func Test_WeightChange(t *testing.T) {
 	count := 1000
-	reinit()
-	addList([]string{"127.0.0.1:50051", "127.0.0.1:50052"})
-	serverdone := newserver(":50051", createSlowCb(time.Millisecond*50))
+	Reinit()
+	AddList([]string{"127.0.0.1:50051", "127.0.0.1:50052"})
+	serverdone := Newserver(":50051", createSlowCb(time.Millisecond*50))
 	defer close(serverdone)
-	serverdone = newserver(":50052", createSlowCb(time.Millisecond*100))
+	serverdone = Newserver(":50052", createSlowCb(time.Millisecond*100))
 	defer close(serverdone)
 	c := &client.DialConfig{}
 	newClient(count, c)

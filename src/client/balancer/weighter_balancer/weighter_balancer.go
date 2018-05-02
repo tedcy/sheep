@@ -4,7 +4,7 @@ package weighter_balancer
 
 import (
 	"coding.net/tedcy/sheep/src/common"
-	"fmt"
+	//"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -75,10 +75,10 @@ func (this *balancer) updateWeightEndPool() {
 	}
 	this.weightEndPool = weightEndPool
 	this.weightSum = weightSoFar
-	fmt.Println("updateWeightEnd")
-	for _, node := range this.weightEndPool {
-		fmt.Println(node.node.key, "-", node.weightEnd)
-	}
+	//fmt.Println("updateWeightEnd")
+	//for _, node := range this.weightEndPool {
+	//	fmt.Println(node.node.key, "-", node.weightEnd)
+	//}
 }
 
 //update的任何数据会生成weight池用于get
@@ -89,9 +89,9 @@ func (this *balancer) Get() (string, bool) {
 	if this.weightSum == 0 {
 		return "", false
 	}
-	r := int(this.rand.Uint32()) % this.weightSum
+	r := this.rand.Uint32() % uint32(this.weightSum)
 	for _, node := range this.weightEndPool {
-		if node.weightEnd > r {
+		if node.weightEnd > int(r) {
 			return node.node.key, true
 		}
 	}
