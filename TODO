@@ -1,4 +1,11 @@
-
+服务发现
+客户端负载均衡
+客户端熔断器
+客户端熔断降级:当有其他节点时返回其他节点，没有时返回没有可用连接直接降级
+服务端服务降级
+监控统计  no
+配置管理  no
+日志trace no
 
 -------------------------------------------
 weight_balancer逻辑
@@ -8,48 +15,25 @@ weighter获取权值变化(30秒一次)
 watcher获取etcd节电变化
 两者都通过intercept进行逻辑around
 
-balance监听外部breaker,外部watcher和内部weighter
+balancer_store:
+get的时候使用随机数生成0到最大区间，选择区间对应的服务器
 
-节电在线但是被关闭的无法被选举（得到的权值不参与get）
-        
-s = sheep.New()
-s.EnableBreaker()
-s.SetBalance("WeightedResponseTime")
+breaker_notify:
+节点在线但是开路的无法被选举（得到的权值不参与get）
+get不到时报错，当get不到时断流器忽略统计
 
+weighter_notify:
 给每个服务器一个初始权值
-选择节点的时候使用随机数生成0到最大区间，选择区间对应的服务器
-
-type Balancer interface {
-	Start(target string, config BalancerConfig) error
-	Up(addr Address) (down func(error))
-	Get(ctx context.Context, opts BalancerGetOptions) (addr Address, put func(), err error)
-	Notify() <-chan []Address
-	Close() error
-}
-
-当开启WeightedResponseTime，每隔30秒重新生成一次权值
+权值检查如果这30秒没有任何通信也不会改变权值
 http://www.cnblogs.com/li3807/p/7469024.html
-如果开启了breaker，那么计算权重阶段和choose阶段都只有完全打开状态的服务器才能参与
-
----------------------------
-熔断器
-https://www.jianshu.com/p/75bb694df964
-
-客户端熔断器在client库封装加入grpc的拦截器，开启以后运行于负载均衡器内
-
-开状态      enable权值
-关          disable权值
-半开        加入test
-
----------------------------
-
-server熔断限流器
-通过intercept逻辑around
-
 -------------------------------------
-Close释放资源
-get不到时报错，当get不到时断流器不会进行断流，权值检查如果这30秒没有任何通信也不会改变权值
-各个功能点测试：
-1，
-2，
-性能测试
+正常情况下，负载均衡逻辑起作用以后，有故障的机器调用少，一般不会被熔断，也不需要调用熔断降级策略
+特殊情况下，下游全挂，此时会返回没有可用连接，相当于对下游的调用服务默认降级了，此时如果有熔断降级策略，可以进行调用
+-------------------------------------
+rpc熔断，熔断降级和负载均衡足矣，从上游防止过量无用请求
+对外服务器需要服务降级
+针对业务逻辑进行服务降级策略，例如只能查询不能修改等等，或者直接返回空结果。
+TODO触发服务降级策略可以直接限流（限流算法）
+或者是处理任务的队列长度限流（上线前跑性能测试，看多少并发响应时间较短）
+或者根据目前一段时间内的响应时间来做限流
+-------------------------------------
