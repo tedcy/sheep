@@ -9,7 +9,8 @@ import (
 type LimiterWrapperType int
 
 const (
-	QueueLengthLimiterWrapperType		LimiterWrapperType = iota
+	None								LimiterWrapperType = iota
+	QueueLengthLimiterWrapperType		
 	InvokeTimeLimiterWrapperType
 )
 
@@ -20,13 +21,15 @@ type LimiterWrapper interface {
 
 func New(ctx context.Context, t LimiterWrapperType, limit int64) *limiterWrapper{
 	l := &limiterWrapper{}
-	l.ctx, l.cancel = context.WithCancel(ctx)
 	switch t {
 	case QueueLengthLimiterWrapperType:
-		l.limiter = limiter.New(limiter.QueueLengthLimiterType, limit)
+		l.limiter = limiter.New(ctx, limiter.QueueLengthLimiterType, limit)
 	case InvokeTimeLimiterWrapperType:
-		l.limiter = limiter.New(limiter.InvokeTimeLimiterType, limit)
+		l.limiter = limiter.New(ctx, limiter.InvokeTimeLimiterType, limit)
+	default:
+		return nil
 	}
+	l.ctx, l.cancel = context.WithCancel(ctx)
 	return l
 }
 
