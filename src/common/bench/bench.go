@@ -11,7 +11,7 @@ type Bench struct {
 	name		string
 	goroutines	[]int
 	time		time.Duration
-	benchFunc	func(interface{})
+	benchFunc	func(interface{}) error
 	initFunc	func() (interface{}, []chan<- struct{})
 	accurate	bool
 	data		interface{}
@@ -21,7 +21,7 @@ type BenchConfig struct {
 	Name		string
 	Goroutines	[]int
 	Time		time.Duration
-	BenchFunc	func(interface{})
+	BenchFunc	func(interface{}) error
 	InitFunc	func() (interface{}, []chan<- struct{})
 	Accurate	bool
 }
@@ -44,7 +44,7 @@ func New(c *BenchConfig) *Bench{
 		b.time = time.Second * 5
 	}
 	if b.benchFunc == nil {
-		b.benchFunc = func(interface{}){}
+		b.benchFunc = func(interface{}) error {return nil}
 	}
 	if b.initFunc == nil {
 		b.initFunc = func()(interface{},[]chan<-struct{}){return nil, nil}
@@ -52,9 +52,11 @@ func New(c *BenchConfig) *Bench{
 	return b
 }
 
-func (this *Bench) bench(gocount int) (uint32, time.Duration){
+func (this *Bench) bench(gocount int) (uint32, time.Duration, uint32, time.Duration){
 	var count uint32
 	var sumT int64
+	var okSumT int64
+	var okCount uint32
 	wg := &sync.WaitGroup{}
 	after := time.Now().Add(this.time)
 	for i := 0;i < gocount;i++ {
@@ -62,11 +64,18 @@ func (this *Bench) bench(gocount int) (uint32, time.Duration){
 		go func() {
 			defer wg.Done()
 			var now time.Time
+			var err	error
+			var delta int64
 			for ;; {
 				now = time.Now()
-				this.benchFunc(this.data)
-				atomic.AddInt64(&sumT, int64(time.Now().Sub(now)))
+				err = this.benchFunc(this.data)
+				delta = int64(time.Now().Sub(now))
+				atomic.AddInt64(&sumT, delta)
 				atomic.AddUint32(&count, 1)
+				if err == nil {
+					atomic.AddInt64(&okSumT, delta)
+					atomic.AddUint32(&okCount, 1)
+				}
 				if after.Before(now) {
 					break
 				}
@@ -75,12 +84,16 @@ func (this *Bench) bench(gocount int) (uint32, time.Duration){
 	}
 	wg.Wait()
 	qps := count / uint32(this.time.Seconds())
-	var delay time.Duration
+	okQps := okCount / uint32(this.time.Seconds())
+	var delay, okDelay time.Duration
 	if count != 0 {
 		delay = time.Duration(sumT) / time.Duration(count)
 	}
+	if okCount != 0 {
+		okDelay = time.Duration(sumT) / time.Duration(count)
+	}
 	//fmt.Printf("qps: %d delay: %s\n", qps, delay)
-	return qps, delay
+	return qps, delay, okQps, okDelay
 }
 
 func (this *Bench) Run() {
@@ -88,20 +101,24 @@ func (this *Bench) Run() {
 	this.data, cs = this.initFunc()
 	for _, gocount := range this.goroutines {
 		if this.accurate {
-			baseQps, baseDelay := this.bench(gocount)
-			qps, delay := this.bench(gocount)
-			fmt.Printf("name:%s c:%d qps:%d delay:%s\n", 
+			baseQps, baseDelay, baseOkQps, baseOkDelay := this.bench(gocount)
+			qps, delay, okQps, okDelay := this.bench(gocount)
+			fmt.Printf("name:%s c:%d qps:%d delay:%s okQps: %d okDelay: %s\n", 
 			this.name,
 			gocount,
 			int(1/(1/float64(qps) - 1/float64(baseQps))),
-			delay - baseDelay)
+			delay - baseDelay,
+			int(1/(1/float64(okQps) - 1/float64(baseOkQps))),
+			okDelay - baseOkDelay)
 		}else {
-			qps, delay := this.bench(gocount)
-			fmt.Printf("name:%s c:%d qps:%d delay:%s\n", 
+			qps, delay, okQps, okDelay := this.bench(gocount)
+			fmt.Printf("name:%s c:%d qps:%d delay:%s okQps: %d okDelay: %s\n", 
 			this.name,
 			gocount,
 			qps,
-			delay)
+			delay,
+			okQps,
+			okDelay)
 		}
 	}
 	for _, c := range cs {

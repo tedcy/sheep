@@ -2,12 +2,20 @@ package common
 
 import (
 	"sync"
+	//"sort"
+	//"fmt"
+	"time"
 )
 
-const max_count = 120
+const max_count = 1200
+
+type node struct {
+	t		time.Time
+	data	int64
+}
 
 type SimpleQueue struct {
-	historyDatas		[]int64
+	historyDatas		[]*node
 	rwlock				sync.RWMutex
 }
 
@@ -22,24 +30,31 @@ func (this *SimpleQueue) Insert(data int64) {
 	if len (this.historyDatas) >= max_count {
 		this.historyDatas = this.historyDatas[1:]
     }
-	this.historyDatas = append(this.historyDatas, data)
+	n := &node{}
+	n.data = data
+	n.t = time.Now()
+	this.historyDatas = append(this.historyDatas, n)
 }
 
-func (this *SimpleQueue) getDatas(count uint32) []int64 {
+func (this *SimpleQueue) getDatas(t time.Time) []int64 {
 	this.rwlock.RLock()
 	defer this.rwlock.RUnlock()
 	var tempDatas []int64
-	length := uint32(len(this.historyDatas))
-	if length >= count {
-		tempDatas = append(tempDatas, this.historyDatas[length-count:]...)
-    }else {
-		tempDatas = append(tempDatas, this.historyDatas[:]...)
-    }
+	var ok bool
+	for _, n := range this.historyDatas {
+		if !ok {
+			if n.t.After(t) {
+				ok = true
+			}
+		}else {
+			tempDatas = append(tempDatas, n.data)
+		}
+	}
 	return tempDatas
 }
 
-func (this *SimpleQueue) GetAverage(count uint32) int64{
-	datas := this.getDatas(count)
+func (this *SimpleQueue) GetAverage(t time.Time) int64{
+	datas := this.getDatas(t)
 	if len(datas) == 0 {
 		return 0
 	}
@@ -51,8 +66,8 @@ func (this *SimpleQueue) GetAverage(count uint32) int64{
 	return sum / int64(len(datas))
 }
 
-func (this *SimpleQueue) GetMax(count uint32) int64{
-	datas := this.getDatas(count)
+func (this *SimpleQueue) GetMax(t time.Time) int64{
+	datas := this.getDatas(t)
 	if len(datas) == 0 {
 		return 0
     }
@@ -63,4 +78,66 @@ func (this *SimpleQueue) GetMax(count uint32) int64{
         }
     }
 	return max
+}
+
+func (this *SimpleQueue) GetMost(t time.Time) int64 {
+	datas := this.getDatas(t)
+	if len(datas) < 10 {
+		return 0
+    }
+	//sort.Sort(int64S(datas))
+	base := getMostBase(datas)
+	if base == 0 {
+		return 0
+	}
+	var sum, c int64
+	for _, data := range datas {
+		if data / base > 10 || data / base == 0 {
+			continue
+		}
+		sum += (data / base) * base
+		c++
+    }
+	if c == 0 {
+		return 0
+	}
+	//取平均数或者众数
+	return sum / c
+}
+
+func getMostBase(datas []int64) int64{
+	var m map[int64]int64 = make(map[int64]int64)
+	for _, data := range datas {
+		m[getBase(data)]++
+	}
+	var max, baseMax int64
+	for base, count := range m {
+		if max < count {
+			max = count
+			baseMax = base
+        }
+	}
+	return baseMax
+}
+
+func getBase(data int64) int64 {
+	var base int64 = 1
+	/*defer func(data int64,base *int64) {
+		fmt.Printf("%d --- %d\n", data, *base)	
+	}(data, &base)*/
+	for ;data > 10; {
+		data /= 10
+		base *= 10
+	}
+	return base
+}
+
+type int64S []int64
+
+func (s int64S) Len() int {return len(s)}
+func (s int64S) Less(i, j int) bool {return s[i] < s[j]}
+func (s int64S) Swap(i, j int) {
+	temp := s[i]
+	s[i] = s[j]
+	s[j] = temp
 }

@@ -6,7 +6,7 @@ import (
 	"coding.net/tedcy/sheep/src/server/limiter_wrapper"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	//"google.golang.org/grpc/reflection"
-	//"time"
+	"time"
 )
 
 var gResp *pb.HelloReply = &pb.HelloReply{Message: "Hello"}
@@ -39,8 +39,10 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 func NewSheepServer(port string, cb func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)) (serverDone chan struct{}) {
 	config := &sheep_server.ServerConfig{}
 	config.LimiterWrapperType = limiter_wrapper.InvokeTimeLimiterWrapperType
-	//config.Limit = int64(time.Millisecond * 100000)
-	config.Limit = 100
+	var i time.Duration
+	_ = i
+	config.Limit = int64(time.Millisecond * 100)
+	//config.Limit = 10000000
 	config.Addr = port
 	realS := &server{}
 	realS.cb = cb

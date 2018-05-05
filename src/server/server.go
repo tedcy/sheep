@@ -18,7 +18,7 @@ func New(ctx context.Context, config *ServerConfig) (*Server, error) {
 	s := &Server{}	
 	s.limiterWrapper = limiter_wrapper.New(ctx, config.LimiterWrapperType, config.Limit)
 	if s.limiterWrapper != nil {
-		s.Server = grpc.NewServer(grpc.UnaryInterceptor(s.limiterWrapper.UnaryServerInterceptor))
+		s.Server = grpc.NewServer(grpc.UnaryInterceptor(s.limiterWrapper.UnaryServerInterceptor), grpc.MaxConcurrentStreams(10000))
 	}
 	//todo add etcd
 	lis, err := net.Listen("tcp", config.Addr)

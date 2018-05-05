@@ -97,13 +97,14 @@ func callOnce(conn *grpc.ClientConn) error {
 }
 
 var gReq *pb.HelloRequest = &pb.HelloRequest{Name: "name"}
-func CreateBenchCall() func(interface{}){
+func CreateBenchCall() func(interface{}) error{
 	var conn *grpc.ClientConn
-	return func (c interface{}) {
+	return func (c interface{}) error{
 		if conn == nil {
 			conn = c.(*grpc.ClientConn)
 		}
-		pb.NewGreeterClient(conn).SayHello(context.Background(), gReq)
+		_, err := pb.NewGreeterClient(conn).SayHello(context.Background(), gReq)
+		return err	
 	}
 }
 
