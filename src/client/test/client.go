@@ -2,6 +2,7 @@ package test
 
 import (
 	"coding.net/tedcy/sheep/src/client"
+	"coding.net/tedcy/sheep/src/watcher/test"
 	"fmt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -12,7 +13,26 @@ import (
 	"time"
 )
 
-var addrMap *sync.Map
+var listNotify = make(chan []string)
+var watchNotify = make(chan struct{})
+
+func Reinit() {
+	time.Sleep(time.Second)
+	reinitAddrMap()
+	close(listNotify)
+	close(watchNotify)
+	listNotify = make(chan []string)
+	watchNotify = make(chan struct{})
+	test.DefaultList(listNotify)
+	test.DefaultWatch(watchNotify)
+}
+
+func AddList(list []string) {
+	go func() { listNotify <- list }()
+	go func() { watchNotify <- struct{}{} }()
+}
+
+var addrMap *sync.Map = &sync.Map{}
 
 func reinitAddrMap() {
 	addrMap = &sync.Map{}
@@ -51,6 +71,12 @@ func CpConfig(config *client.DialConfig) (c *client.DialConfig) {
 	c.EnableBreak = true
 	c.BalancerType = client.RespTimeBalancer
 	c.Target = "test://"
+	if config.Path != "" {
+		c.Path = config.Path
+	}
+	if config.Target != "" {
+		c.Target = config.Target
+	}
 	if config.BalancerType != 0 {
 		c.BalancerType = config.BalancerType
 	}
@@ -63,7 +89,7 @@ func CpConfig(config *client.DialConfig) (c *client.DialConfig) {
 	return
 }
 
-func newClient(callCounts int, config *client.DialConfig) error {
+func NewClient(callCounts int, config *client.DialConfig) error {
 	c := CpConfig(config)
 	conn, err := client.DialContext(context.Background(), c)
 	if err != nil {

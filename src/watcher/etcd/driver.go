@@ -5,13 +5,23 @@ import (
 	"golang.org/x/net/context"
 	"strings"
 	"time"
+	"sync"
+	"errors"
+)
+
+var (
+	ErrClosedClient = errors.New("use of closed etcd client")
+	ErrNotDir  = errors.New("etcd: not a dir")
 )
 
 type EtcdClient struct {
-	kapi    client.KeysAPI
-	timeout time.Duration
-	ctx     context.Context
-	cancel  context.CancelFunc
+	kapi			client.KeysAPI
+	timeout			time.Duration
+	refreshTimeout	time.Duration
+	ctx				context.Context
+	cancel			context.CancelFunc
+	closed			bool
+	rwlock			sync.RWMutex
 }
 
 func New(ctx context.Context, addrStr string, timeout time.Duration) (c *EtcdClient, err error) {
@@ -34,6 +44,11 @@ func New(ctx context.Context, addrStr string, timeout time.Duration) (c *EtcdCli
 	}
 	c.kapi = client.NewKeysAPI(eC)
 	c.timeout = timeout
+	if c.timeout == 0 {
+		c.refreshTimeout = time.Second * 12
+	}else {
+		c.refreshTimeout = c.timeout
+	}
 	c.ctx, c.cancel = context.WithCancel(ctx)
 
 	return
@@ -49,12 +64,22 @@ func (this *EtcdClient) Read(path string) (data []byte, err error) {
 	return
 }
 func (this *EtcdClient) List(path string) (paths []string, index uint64, err error) {
+	this.rwlock.RLock()
+	defer this.rwlock.RUnlock()
+	if this.closed {
+		err = ErrClosedClient
+		return
+	}
 	ctx := this.ctx
 	if this.timeout != 0 {
 		ctx, _ = context.WithTimeout(ctx, this.timeout)
 	}
 	resp, err := this.kapi.Get(ctx, path, nil)
 	if err != nil {
+		return
+	}
+	if !resp.Node.Dir {
+		err = ErrNotDir
 		return
 	}
 	for _, node := range resp.Node.Nodes {
@@ -67,6 +92,11 @@ func (this *EtcdClient) Update(path string, data []byte) (err error) {
 	return
 }
 func (this *EtcdClient) Watch(path string, cb func() (uint64, error)) (err error) {
+	this.rwlock.RLock()
+	defer this.rwlock.RUnlock()
+	if this.closed {
+		return ErrClosedClient
+	}
 	var afterIndex uint64
 	afterIndex, err = cb()
 	if err != nil {
@@ -91,14 +121,74 @@ func (this *EtcdClient) Watch(path string, cb func() (uint64, error)) (err error
 	return
 }
 func (this *EtcdClient) CreateEphemeral(path string, data []byte) (err error) {
+	this.rwlock.RLock()
+	defer this.rwlock.RUnlock()
+	if this.closed {
+		err = ErrClosedClient
+		return
+	}
+	ctx := this.ctx
+	if this.timeout != 0 {
+		ctx, _ = context.WithTimeout(ctx, this.timeout)
+	}
+	_, err = this.kapi.Set(ctx, path, string(data),
+		&client.SetOptions{
+			PrevExist: client.PrevNoExist,
+			TTL:       this.refreshTimeout})
+	if err != nil {
+		return
+	}
+	this.runRefresh(path)
 	return
 }
 func (this *EtcdClient) CreateEphemeralInOrder(path string, data []byte) (err error) {
 	return
 }
 
+func (this *EtcdClient) runRefresh(path string) {
+	go func() {
+		for {
+			if err := this.refresh(path); err != nil {
+				return
+			}
+			select {
+			case <-time.After(this.refreshTimeout / 2):
+			case <-this.ctx.Done():
+				return
+			}
+		}
+	}()
+}
+
+func (this *EtcdClient) refresh(path string) (err error) {
+	this.rwlock.RLock()
+	defer this.rwlock.RUnlock()
+	if this.closed {
+		return ErrClosedClient
+	}
+	ctx := this.ctx
+	if this.timeout != 0 {
+		ctx, _ = context.WithTimeout(ctx, this.timeout)
+	}
+	_, err = this.kapi.Set(ctx, path, "",
+		&client.SetOptions{
+			PrevExist: client.PrevExist,
+			Refresh:   true,
+			TTL:       this.refreshTimeout})
+	if err != nil {
+		return
+	}
+	return
+}
+
 //TODO need test
 func (this *EtcdClient) Close() (err error) {
+	this.rwlock.Lock()
+	defer this.rwlock.Unlock()
+	if this.closed {
+		return nil
+	}
+	this.closed = true
 	this.cancel()
 	return nil
 }

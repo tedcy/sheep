@@ -8,7 +8,7 @@ package limiter
 import (
 	"coding.net/tedcy/sheep/src/common"
 	"errors"
-	"fmt"
+	//"fmt"
 	"golang.org/x/net/context"
 	"sync/atomic"
 	"time"
@@ -96,7 +96,7 @@ func (this *QueueLengthLimiter) Close() error {
 //如果目前响应时间大于限定响应时间，那么根据比例推断限制多少任务队列可能达到预期的响应时间
 //只计算了invoker而没有计算fallback的响应时间
 //计算响应时间和任务队列做了一些去噪处理，取可信的一些数据
-//太过激烈的波动限额值会引起更大的拥塞问题，所以每次步进delta值的3/4
+//太过激烈的波动限额值会引起更大的拥塞问题，所以每次步进delta值的1/2
 func NewInvokeTimeLimter(ctx context.Context, limit int64) *InvokeTimeLimiter {
 	l := &InvokeTimeLimiter{}
 	l.limit = limit
@@ -153,7 +153,7 @@ func (this *InvokeTimeLimiter) Close() error {
 }
 
 func (this *InvokeTimeLimiter) timeLooper() {
-	go func() {
+	/*go func() {
 		var delta time.Duration = time.Second * 2
 		for {
 			select {
@@ -166,7 +166,7 @@ func (this *InvokeTimeLimiter) timeLooper() {
 			avgQueue := this.lQueue.GetAverage(t)
 			fmt.Printf("cost: %d,queue: %d\n", avgCost/int64(time.Millisecond), avgQueue)
 		}	
-	}()
+	}()*/
 	go func() {
 		var delta time.Duration = time.Second * 10
 		for {
@@ -186,10 +186,10 @@ func (this *InvokeTimeLimiter) timeLooper() {
 				if nowQueueLength != 0 {
 					queueLength = nowQueueLength + ((queueLength - nowQueueLength) * 1 / 2)
 				}
-				fmt.Printf("- - - %d %d %d\n",
+				/*fmt.Printf("- - - %d %d %d\n",
 					mostCost/int64(time.Millisecond),
 					this.limit/int64(time.Millisecond),
-					queueLength)
+					queueLength)*/
 				atomic.StoreInt64(&this.lengthLimit, queueLength)
 			}
 		}

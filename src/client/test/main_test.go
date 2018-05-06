@@ -7,32 +7,13 @@ import (
 	"time"
 )
 
-var listNotify = make(chan []string)
-var watchNotify = make(chan struct{})
-
-func Reinit() {
-	time.Sleep(time.Second)
-	reinitAddrMap()
-	close(listNotify)
-	close(watchNotify)
-	listNotify = make(chan []string)
-	watchNotify = make(chan struct{})
-	test.DefaultList(listNotify)
-	test.DefaultWatch(watchNotify)
-}
-
-func AddList(list []string) {
-	go func() { listNotify <- list }()
-	go func() { watchNotify <- struct{}{} }()
-}
-
 func Test_WatcherInit(t *testing.T) {
 	Reinit()
 	AddList([]string{"127.0.0.1:50051"})
 	serverdone := Newserver(":50051", defaultCb)
 	defer close(serverdone)
 	c := &client.DialConfig{}
-	err := newClient(1, c)
+	err := NewClient(1, c)
 	if err != nil {
 		t.Fatalf("%s", err)
 	}
@@ -45,7 +26,7 @@ func Test_WatcherChange(t *testing.T) {
 	serverdone := Newserver(":50052", defaultCb)
 	defer close(serverdone)
 	c := &client.DialConfig{}
-	err := newClient(1, c)
+	err := NewClient(1, c)
 	if err != nil {
 		t.Fatalf("%s", err)
 	}
@@ -61,7 +42,7 @@ func Test_BreakerOpen(t *testing.T) {
 	serverdone = Newserver(":50052", errCb)
 	defer close(serverdone)
 	c := &client.DialConfig{}
-	newClient(count, c)
+	NewClient(count, c)
 	printResult()
 	count1 := getAddr("127.0.0.1:50051")
 	//count2 := getAddr("127.0.0.1:50052")
@@ -82,7 +63,7 @@ func Test_BreakerHalfOpen(t *testing.T) {
 	serverdone = Newserver(":50052", afterTimeErr2Success())
 	defer close(serverdone)
 	c := &client.DialConfig{}
-	newClient(count, c)
+	NewClient(count, c)
 	printResult()
 	//count1 := getAddr("127.0.0.1:50051")
 	count2 := getAddr("127.0.0.1:50052")
@@ -101,7 +82,7 @@ func Test_WeightChange(t *testing.T) {
 	serverdone = Newserver(":50052", createSlowCb(time.Millisecond*100))
 	defer close(serverdone)
 	c := &client.DialConfig{}
-	newClient(count, c)
+	NewClient(count, c)
 	printResult()
 	//count1 := getAddr("127.0.0.1:50051")
 	count2 := getAddr("127.0.0.1:50052")
