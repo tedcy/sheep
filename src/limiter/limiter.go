@@ -8,7 +8,7 @@ package limiter
 import (
 	"coding.net/tedcy/sheep/src/common"
 	"errors"
-	//"fmt"
+	"fmt"
 	"golang.org/x/net/context"
 	"sync/atomic"
 	"time"
@@ -121,7 +121,6 @@ type InvokeTimeLimiter struct {
 
 func (this *InvokeTimeLimiter) Execute(invoker, fallback func() (interface{}, error)) (resp interface{}, err error) {
 	defer atomic.AddInt64(&this.queueLength, -1)
-	//atomic.AddInt64(&this.queueLength, 1)
 	lengthLimit := atomic.LoadInt64(&this.lengthLimit)
 	nowLength := atomic.AddInt64(&this.queueLength, 1)
 	if lengthLimit != 0 && nowLength > lengthLimit {
@@ -153,7 +152,7 @@ func (this *InvokeTimeLimiter) Close() error {
 }
 
 func (this *InvokeTimeLimiter) timeLooper() {
-	/*go func() {
+	go func() {
 		var delta time.Duration = time.Second * 2
 		for {
 			select {
@@ -166,7 +165,7 @@ func (this *InvokeTimeLimiter) timeLooper() {
 			avgQueue := this.lQueue.GetAverage(t)
 			fmt.Printf("cost: %d,queue: %d\n", avgCost/int64(time.Millisecond), avgQueue)
 		}	
-	}()*/
+	}()
 	go func() {
 		var delta time.Duration = time.Second * 10
 		for {
@@ -186,10 +185,10 @@ func (this *InvokeTimeLimiter) timeLooper() {
 				if nowQueueLength != 0 {
 					queueLength = nowQueueLength + ((queueLength - nowQueueLength) * 1 / 2)
 				}
-				/*fmt.Printf("- - - %d %d %d\n",
+				fmt.Printf("- - - %d %d %d\n",
 					mostCost/int64(time.Millisecond),
 					this.limit/int64(time.Millisecond),
-					queueLength)*/
+					queueLength)
 				atomic.StoreInt64(&this.lengthLimit, queueLength)
 			}
 		}

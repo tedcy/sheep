@@ -29,7 +29,7 @@ func TestBenchCallSheepServer() {
 	bConfig.BenchFunc = test.CreateBenchCall()
 	bConfig.Name = "grpc"
 	bConfig.Time = time.Second * 60
-	bConfig.Goroutines = []int{200,200,200,200,200,200}
+	//bConfig.Goroutines = []int{200,200,200,200,200,200}
 	bench.New(bConfig).Run()
 }
 

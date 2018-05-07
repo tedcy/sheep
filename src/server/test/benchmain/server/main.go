@@ -5,6 +5,7 @@ import (
 	sheep_server "coding.net/tedcy/sheep/src/server"
 	"coding.net/tedcy/sheep/src/server/limiter_wrapper"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
+	"google.golang.org/grpc"
 	//"google.golang.org/grpc/reflection"
 	"time"
 )
@@ -42,6 +43,10 @@ func NewSheepServer(port string, cb func(ctx context.Context, in *pb.HelloReques
 	var i time.Duration
 	_ = i
 	config.Limit = int64(time.Millisecond * 100)
+	config.WatcherAddrs = "etcd://172.16.176.38:2379"
+	config.WatcherPath = "/test1"
+	config.WatcherTimeout = time.Second * 3
+	config.GrpcOpts = append(config.GrpcOpts, grpc.MaxConcurrentStreams(10000))
 	//config.Limit = 10000000
 	config.Addr = port
 	realS := &server{}
