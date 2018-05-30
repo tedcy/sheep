@@ -6,26 +6,18 @@ import (
 	"google.golang.org/grpc"
 )
 
-type LimiterWrapperType int
-
-const (
-	None								LimiterWrapperType = iota
-	QueueLengthLimiterWrapperType		
-	InvokeTimeLimiterWrapperType
-)
-
 type LimiterWrapper interface {
 	UnaryServerInterceptor (ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error)
 	Close() error
 }
 
-func New(ctx context.Context, t LimiterWrapperType, limit int64) *limiterWrapper{
+func New(ctx context.Context, t limiter.LimiterType, limit int64) *limiterWrapper{
 	l := &limiterWrapper{}
 	switch t {
-	case QueueLengthLimiterWrapperType:
-		l.limiter = limiter.New(ctx, limiter.QueueLengthLimiterType, limit)
-	case InvokeTimeLimiterWrapperType:
-		l.limiter = limiter.New(ctx, limiter.InvokeTimeLimiterType, limit)
+	case limiter.QueueLengthLimiterType:
+		l.limiter = limiter.New(ctx, t, limit)
+	case limiter.InvokeTimeLimiterType:
+		l.limiter = limiter.New(ctx, t, limit)
 	default:
 		return nil
 	}
