@@ -62,3 +62,6 @@ func (this *test) CreateEphemeralInOrder(path string, data []byte) (err error) {
 func (this *test) Close() error {
 	return nil
 }
+func (this *test) GetLocalIp() string {
+	return ""
+}

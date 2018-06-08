@@ -7,6 +7,7 @@ import (
 	"time"
 	"sync"
 	"errors"
+	"net"
 )
 
 var (
@@ -22,6 +23,8 @@ type EtcdClient struct {
 	cancel			context.CancelFunc
 	closed			bool
 	rwlock			sync.RWMutex
+	//just for get localip
+	addrList		[]string
 }
 
 func New(ctx context.Context, addrStr string, timeout time.Duration) (c *EtcdClient, err error) {
@@ -50,8 +53,18 @@ func New(ctx context.Context, addrStr string, timeout time.Duration) (c *EtcdCli
 		c.refreshTimeout = c.timeout
 	}
 	c.ctx, c.cancel = context.WithCancel(ctx)
-
+	c.addrList = addrList
 	return
+}
+
+func (this *EtcdClient) GetLocalIp() string {
+	addr := strings.TrimLeft(this.addrList[0], "http://")
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return ""
+	}
+	defer conn.Close()
+	return strings.SplitN(conn.LocalAddr().String(),":",2)[0]
 }
 
 func (this *EtcdClient) Create(path string, data []byte) (err error) {
@@ -133,7 +146,7 @@ func (this *EtcdClient) CreateEphemeral(path string, data []byte) (err error) {
 	}
 	_, err = this.kapi.Set(ctx, path, string(data),
 		&client.SetOptions{
-			PrevExist: client.PrevNoExist,
+			PrevExist: client.PrevIgnore,
 			TTL:       this.refreshTimeout})
 	if err != nil {
 		return

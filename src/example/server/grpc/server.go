@@ -20,7 +20,7 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 
 func main() {
 	config := &sheep_server.ServerConfig{}
-	config.Addr = "127.0.0.1:50051"
+	config.Addr = ":50051"
 	config.WatcherAddrs = "etcd://172.16.176.38:2379"
 	config.WatcherPath = "/test1"
 	config.WatcherTimeout = time.Second * 3

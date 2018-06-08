@@ -10,6 +10,7 @@ import (
 )
 
 type WatcherI interface {
+	GetLocalIp() string
 	Create(path string, data []byte) error
 	Delete(path string) error
 

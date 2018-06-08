@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"time"
+	"strings"
 )
 
 type BalancerType int
@@ -20,16 +21,22 @@ type DialConfig struct {
 	EnableBreak  bool
 	BalancerType BalancerType
 	Timeout      time.Duration
-	//etcd://172.16.176.38:2379,ip:port
-	Target string
-	Path   string
-	ctx    context.Context
+	//etcd://172.16.176.38:2379,ip:port/path
+	TargetPath string
+}
+
+func splitTargetPath(targetPath string) (target, path string) {
+	index := strings.LastIndex(targetPath, "/")
+	target = targetPath[:index]
+	path = targetPath[index:]
+	return
 }
 
 func DialContext(ctx context.Context, config *DialConfig, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+	target, path := splitTargetPath(config.TargetPath)
 	c := &client{}
 	c.ctx = ctx
-	c.Balancer, err = balancer.New(ctx, config.Path, config.Timeout)
+	c.Balancer, err = balancer.New(ctx, path, config.Timeout)
 	if err != nil {
 		return
 	}
@@ -40,7 +47,7 @@ func DialContext(ctx context.Context, config *DialConfig, opts ...grpc.DialOptio
 	opts = append(opts, grpc.WithInsecure())
 	opts = append(opts, grpc.WithBalancer(c))
 	opts = append(opts, grpc.WithUnaryInterceptor(c.clientIntercept()))
-	conn, err = grpc.DialContext(ctx, config.Target, opts...)
+	conn, err = grpc.DialContext(ctx, target, opts...)
 	if err != nil {
 		return
 	}

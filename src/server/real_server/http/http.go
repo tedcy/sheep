@@ -78,6 +78,12 @@ func (this *HttpServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			}
 			return nil, err
 		}, nil)
+	}else {
+		err := handler.Handler(context.TODO(), req.Body, rw)
+		//如果rw没写入header，这里补上
+		if err != nil {
+			rw.WriteHeader(501)
+		}
 	}
 }
 

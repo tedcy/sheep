@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 	"net"
 	"time"
+	"strings"
 )
 
 type ServerConfig struct {
@@ -39,9 +40,21 @@ func New(ctx context.Context, config *ServerConfig) (s *Server,err error) {
 	}
 	s.lis = lis
 	if config.WatcherAddrs != "" {
+		config.Addr = checkConfigAddr(s.watcher, config.Addr)
 		err = s.watcher.CreateEphemeral(config.WatcherPath + "/" + config.Addr, nil)
 	}
 	return
+}
+
+func checkConfigAddr(watcher watcher.WatcherI, addr string) string{
+	if watcher == nil {
+		return addr
+	}
+	ss := strings.SplitN(addr, ":", 2)
+	if ss[0] == "" || ss[0] == "0.0.0.0"{
+		ss[0] = watcher.GetLocalIp()
+	}
+	return ss[0] + ":" + ss[1]
 }
 
 type Server struct {

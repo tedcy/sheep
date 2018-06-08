@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"golang.org/x/net/context"
-	"github.com/yyzybb537/ketty"
+	"coding.net/tedcy/sheep/src/common"
 )
 
 type FakeInterface struct {
@@ -89,11 +89,11 @@ func (this *FakeInterface) Interface() interface{} {
 
 func (this *FakeInterface) Do(methodName string, args ...interface{}) (ctx context.Context) {
 	if this.realizedI == nil {
-		return ketty.WithError(context.Background(), fmt.Errorf("invalid FakeInterface: not Realized"))
+		return common.WithError(context.Background(), fmt.Errorf("invalid FakeInterface: not Realized"))
     }
 	m, ok := this.m[methodName]
 	if !ok {
-		return ketty.WithError(ctx, fmt.Errorf("invalid MethodName: %s not Realized", methodName))
+		return common.WithError(ctx, fmt.Errorf("invalid MethodName: %s not Realized", methodName))
     }
 	return m.Handle(args...)
 }

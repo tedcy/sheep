@@ -1,4 +1,4 @@
-package ploy
+package flow
 
 import (
 	"reflect"

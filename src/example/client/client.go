@@ -11,10 +11,9 @@ import (
 
 func main() {
 	c := &client.DialConfig{}
-	c.EnableBreak = true
-	c.BalancerType = client.RespTimeBalancer
-	c.Target = "etcd://172.16.176.38:2379"
-	c.Path = "/test1"
+	c.EnableBreak = false
+	c.BalancerType = client.DefaultBalancer
+	c.TargetPath = "etcd://172.16.176.38:2379/test1"
 	//c.Timeout = time.Second * 3
 	conn, err := client.DialContext(context.Background(), c)
 	if err != nil {

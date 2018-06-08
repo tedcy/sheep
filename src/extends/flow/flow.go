@@ -1,9 +1,9 @@
-package ploy
+package flow
 
 import (
 	"golang.org/x/net/context"
-	"github.com/yyzybb537/ketty/extends/ploy/fake_interface"
-	"github.com/yyzybb537/ketty"
+	"coding.net/tedcy/sheep/src/extends/flow/fake_interface"
+	"coding.net/tedcy/sheep/src/common"
 	"fmt"
 )
 
@@ -69,7 +69,7 @@ func (this *BaseFlow) Executor(ctx context.Context, req interface{},resp interfa
 		if this.realizeTrace {
 			ctx = this.traceFI.Do("PloyDidRun", ployFI.Interface(), ctx, req, resp)
 		}
-		if ctx != nil && ctx.Err() != nil {
+		if ctx != nil && ctx.Err() != nil && common.GetError(ctx) != nil{
 			return ctx
 		}
 	}
@@ -84,10 +84,10 @@ func (this *BaseFlow) AddPloy(imp interface{}) {
 	ployFI := fake_interface.NewFakeInterface()
 	ployFI.Add("Run", 3)
 	err := ployFI.Realize(imp)
-	ketty.Assert(err)
+	common.Assert(err)
 	if len(this.ployFIs) != 0 {
 		if !ployFI.LookLike(this.ployFIs[0]) {
-			ketty.Assert(fmt.Errorf("one new ploy %s don't LookLike the first ploy %s", ployFI.RealizedTypeName(), this.ployFIs[0].RealizedTypeName()))
+			common.Assert(fmt.Errorf("one new ploy %s don't LookLike the first ploy %s", ployFI.RealizedTypeName(), this.ployFIs[0].RealizedTypeName()))
 		}
 	}
 	i, ok := imp.(_init)
@@ -100,6 +100,6 @@ func (this *BaseFlow) AddPloy(imp interface{}) {
 
 func (this *BaseFlow) AddTrace(imp interface{}) {
 	err := this.traceFI.Realize(imp)
-	ketty.Assert(err)
+	common.Assert(err)
 	this.realizeTrace = true
 }
