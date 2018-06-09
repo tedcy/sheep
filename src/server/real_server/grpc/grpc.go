@@ -1,38 +1,50 @@
 package grpc
 
 import (
-	"coding.net/tedcy/sheep/src/limiter"
-	"coding.net/tedcy/sheep/src/server/real_server/grpc/limiter_wrapper"
 	"google.golang.org/grpc"
 	"golang.org/x/net/context"
+	"coding.net/tedcy/sheep/src/server/real_server/common"
 	"fmt"
 	"net"
 )
 
 type GrpcServer struct {
-	limiterWrapper			limiter_wrapper.LimiterWrapper
 	server					*grpc.Server
+	interceptor				common.ServerInterceptor
 }
 
 type GrpcServerOpt struct {
-	LimiterType				limiter.LimiterType
-	Limit					int64
 	GrpcOpts				[]grpc.ServerOption
 }
 
-func New(ctx context.Context, opt interface{}) (s *GrpcServer, err error){
-	o, ok := opt.(*GrpcServerOpt)
-	if !ok {
-		err = fmt.Errorf("invalid grpc opt type")
-		return
+func New(ctx context.Context, interceptor common.ServerInterceptor, opt interface{}) (s *GrpcServer, err error){
+	opts := []grpc.ServerOption{}
+	if opt != nil {
+		o, ok := opt.(*GrpcServerOpt)
+		if !ok {
+			err = fmt.Errorf("invalid grpc opt type")
+			return
+		}
+		opts = o.GrpcOpts
 	}
+	
 	s = &GrpcServer{}
-	s.limiterWrapper = limiter_wrapper.New(ctx, o.LimiterType, o.Limit)
-	if s.limiterWrapper != nil {
-		o.GrpcOpts = append(o.GrpcOpts, grpc.UnaryInterceptor(s.limiterWrapper.UnaryServerInterceptor))
-	}
-	s.server = grpc.NewServer(o.GrpcOpts...)
+	opts = append(opts, grpc.UnaryInterceptor(s.ServeGrpc))
+	s.server = grpc.NewServer(opts...)
+	s.interceptor = interceptor
 	return
+}
+
+//todo 函数类型怎么直接转换？
+func (this *GrpcServer) ServeGrpc(ctx context.Context, req interface{}, 
+		info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	if this.interceptor != nil {
+		return this.interceptor(ctx, req, 
+			func(ctx context.Context, req interface{}) (resp interface{}, err error) {
+				return handler(ctx, req)
+			})
+	}
+	return handler(ctx, req)
 }
 
 func (this *GrpcServer) Register(protoDesc interface{}, imp interface{}) error{
@@ -50,8 +62,5 @@ func (this *GrpcServer) Serve(lis net.Listener) error{
 
 func (this *GrpcServer) Stop() (err error) {
 	this.server.Stop()
-	if this.limiterWrapper != nil {
-		this.limiterWrapper.Close()
-	}
 	return
 }

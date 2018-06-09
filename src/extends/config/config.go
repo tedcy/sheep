@@ -3,6 +3,7 @@ package config
 import (
 	"strings"
 	"fmt"
+	"encoding/json"
 )
 
 func Read(cfg interface{}, file string) error {
@@ -11,6 +12,10 @@ func Read(cfg interface{}, file string) error {
 	if err != nil {
 		return err
     }
+	defer func() {
+		b, _ := json.MarshalIndent(cfg, "", "    ")
+		println(string(b))
+	}()
 
 	return config.Read(cfg, file)
 }

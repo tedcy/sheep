@@ -25,7 +25,8 @@ type LimiterI interface {
 type LimiterType int
 
 const (
-	QueueLengthLimiterType LimiterType = iota
+	NoneLimiterType LimiterType = iota
+	QueueLengthLimiterType
 	InvokeTimeLimiterType
 )
 
@@ -152,7 +153,7 @@ func (this *InvokeTimeLimiter) Close() error {
 }
 
 func (this *InvokeTimeLimiter) timeLooper() {
-	go func() {
+	/*go func() {
 		var delta time.Duration = time.Second * 2
 		for {
 			select {
@@ -165,7 +166,7 @@ func (this *InvokeTimeLimiter) timeLooper() {
 			avgQueue := this.lQueue.GetAverage(t)
 			fmt.Printf("cost: %d,queue: %d\n", avgCost/int64(time.Millisecond), avgQueue)
 		}	
-	}()
+	}()*/
 	go func() {
 		var delta time.Duration = time.Second * 10
 		for {

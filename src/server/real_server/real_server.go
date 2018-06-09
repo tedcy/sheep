@@ -3,6 +3,7 @@ package real_server
 import (
 	"coding.net/tedcy/sheep/src/server/real_server/grpc"
 	"coding.net/tedcy/sheep/src/server/real_server/http"
+	"coding.net/tedcy/sheep/src/server/real_server/common"
 	"golang.org/x/net/context"
 	"net"
 	"fmt"
@@ -15,12 +16,12 @@ type RealServerI interface {
 	Stop() error
 }
 
-func New(stype string, ctx context.Context, opt interface{}) (RealServerI, error) {
+func New(stype string, ctx context.Context, interceptor common.ServerInterceptor, opt interface{}) (RealServerI, error) {
 	switch stype {
 	case "http":
-		return http.New(ctx, opt)
+		return http.New(ctx, interceptor, opt)
 	case "grpc":
-		return grpc.New(ctx, opt)
+		return grpc.New(ctx, interceptor, opt)
 	default:
 		return nil, fmt.Errorf("invalid opt type %s", stype)
 	}

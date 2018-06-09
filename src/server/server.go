@@ -2,7 +2,10 @@ package server
 
 import (
 	"coding.net/tedcy/sheep/src/watcher"
+	"coding.net/tedcy/sheep/src/limiter"
+	"coding.net/tedcy/sheep/src/server/limiter_wrapper"
 	"coding.net/tedcy/sheep/src/server/real_server"
+	"coding.net/tedcy/sheep/src/server/real_server/common"
 	"golang.org/x/net/context"
 	"net"
 	"time"
@@ -15,12 +18,22 @@ type ServerConfig struct {
 	WatcherAddrs			string
 	WatcherTimeout			time.Duration
 	WatcherPath				string
+	LimiterType				limiter.LimiterType
+	Limit					int64
+	interceptors			[]common.ServerInterceptor
 	Opt						interface{}
 }
 
 func New(ctx context.Context, config *ServerConfig) (s *Server,err error) {
 	s = &Server{}	
-	s.server, err = real_server.New(config.Type, ctx, config.Opt)
+	s.limiterWrapper = limiter_wrapper.New(ctx, config.LimiterType, config.Limit)
+	//limiter should insert first
+	var interceptors []common.ServerInterceptor
+	if s.limiterWrapper != nil {
+		interceptors = append([]common.ServerInterceptor{}, s.limiterWrapper.ServerInterceptor)
+	}
+	interceptors = append(interceptors, config.interceptors...)
+	s.server, err = real_server.New(config.Type, ctx, common.MergeInterceptor(interceptors), config.Opt)
 	if err != nil {
 		return
 	}
@@ -59,6 +72,7 @@ func checkConfigAddr(watcher watcher.WatcherI, addr string) string{
 
 type Server struct {
 	server					real_server.RealServerI
+	limiterWrapper			limiter_wrapper.LimiterWrapper
 	lis						net.Listener
 	watcher					watcher.WatcherI
 }
@@ -77,6 +91,9 @@ func (this *Server) GetRegisterHandler() interface{} {
 
 func (this *Server) Close() (err error){
 	err = this.server.Stop()
+	if this.limiterWrapper != nil {
+		_ = this.limiterWrapper.Close()
+	}
 	if this.watcher != nil {
 		_ = this.watcher.Close()
 	}

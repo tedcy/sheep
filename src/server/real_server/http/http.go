@@ -1,7 +1,7 @@
 package http
 
 import (
-	"coding.net/tedcy/sheep/src/limiter"
+	"coding.net/tedcy/sheep/src/server/real_server/common"
 	"golang.org/x/net/context"
 	"fmt"
 	"net/http"
@@ -10,31 +10,30 @@ import (
 )
 
 type HttpHandlerI interface{
-	Handler(ctx context.Context, req io.Reader, resp io.Writer) (err error)
+	Handler(ctx context.Context, req interface{}) (resp interface{}, err error)
+	Decode(r io.Reader) (req interface{},err error)
+	Encode(resp interface{}, rw io.Writer) (err error)
 }
 
 type HttpServer struct {
-	limiter				limiter.LimiterI
 	server				*http.Server
+	interceptor         common.ServerInterceptor
 	protoImps			map[string]HttpHandlerI
 }
 
 type HttpServerOpt struct {
-	LimiterType				limiter.LimiterType
-	Limit					int64
 }
 
-func New(ctx context.Context, opt interface{}) (s *HttpServer, err error){
-	o, ok := opt.(*HttpServerOpt)
+func New(ctx context.Context, interceptor common.ServerInterceptor, opt interface{}) (s *HttpServer, err error){
+	/*o, ok := opt.(*HttpServerOpt)
 	if !ok {
 		err = fmt.Errorf("invalid http opt type")
 		return
-	}
+	}*/
 	s = &HttpServer{}
 	s.protoImps = make(map[string]HttpHandlerI)
-	s.limiter = limiter.New(ctx, o.LimiterType, o.Limit)
 	s.server = &http.Server{}
-	s.server.Handler = s
+	s.interceptor = interceptor
 	return
 }
 
@@ -60,31 +59,38 @@ func (this *HttpServer) Serve(lis net.Listener) error{
 	return this.server.Serve(lis)
 }
 
-func (this *HttpServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	method := req.Method
-	path := req.URL.Path
+func (this *HttpServer) ServeHTTP(rw http.ResponseWriter, httpReq *http.Request) {
+	method := httpReq.Method
+	path := httpReq.URL.Path
 	handler, ok := this.protoImps[method + ":" + path]
 	if !ok {
 		rw.WriteHeader(404)
 		return
 	}
-	defer req.Body.Close()
-	if this.limiter != nil {
-		this.limiter.Execute(func()(interface{}, error){
-			err := handler.Handler(context.TODO(), req.Body, rw)
-			//如果rw没写入header，这里补上
-			if err != nil {
-				rw.WriteHeader(501)
-			}
-			return nil, err
-		}, nil)
-	}else {
-		err := handler.Handler(context.TODO(), req.Body, rw)
-		//如果rw没写入header，这里补上
-		if err != nil {
-			rw.WriteHeader(501)
-		}
+	if httpReq.Body == nil {
+		rw.WriteHeader(501)
+		return
 	}
+	defer httpReq.Body.Close()
+	req, err := handler.Decode(httpReq.Body)
+	if err != nil {
+		rw.WriteHeader(501)
+	}
+	var resp interface{}
+	if this.interceptor != nil {
+		resp, err = this.interceptor(context.TODO(), req, handler.Handler)
+	}else {
+		resp, err = handler.Handler(context.TODO(), req)
+	}
+	//如果rw没写入header，这里补上
+	if err != nil {
+		rw.WriteHeader(501)
+	}
+	err = handler.Encode(resp, rw)
+	if err != nil {
+		rw.WriteHeader(501)
+	}
+	return
 }
 
 func (this *HttpServer) Stop() error {

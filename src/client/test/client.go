@@ -70,12 +70,9 @@ func CpConfig(config *client.DialConfig) (c *client.DialConfig) {
 	c = &client.DialConfig{}
 	c.EnableBreak = true
 	c.BalancerType = client.RespTimeBalancer
-	c.Target = "test://"
-	if config.Path != "" {
-		c.Path = config.Path
-	}
-	if config.Target != "" {
-		c.Target = config.Target
+	c.TargetPath = "test://0.0.0.0/test1"
+	if config.TargetPath != "" {
+		c.TargetPath = config.TargetPath
 	}
 	if config.BalancerType != 0 {
 		c.BalancerType = config.BalancerType

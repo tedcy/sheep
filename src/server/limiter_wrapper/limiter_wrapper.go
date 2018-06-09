@@ -2,12 +2,12 @@ package limiter_wrapper
 
 import (
 	"coding.net/tedcy/sheep/src/limiter"
+	"coding.net/tedcy/sheep/src/server/real_server/common"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 )
 
 type LimiterWrapper interface {
-	UnaryServerInterceptor (ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error)
+	ServerInterceptor (ctx context.Context, req interface{}, handler common.ServerHandler) (resp interface{}, err error)
 	Close() error
 }
 
@@ -31,7 +31,7 @@ type limiterWrapper struct {
 	limiter		limiter.LimiterI
 }
 
-func (this *limiterWrapper) UnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func (this *limiterWrapper) ServerInterceptor(ctx context.Context, req interface{}, handler common.ServerHandler) (resp interface{}, err error) {
 	resp, err = this.limiter.Execute(func() (interface{}, error) {
 		return handler(ctx, req)
 	}, nil)
