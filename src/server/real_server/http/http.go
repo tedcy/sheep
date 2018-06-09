@@ -34,6 +34,7 @@ func New(ctx context.Context, interceptor common.ServerInterceptor, opt interfac
 	s.protoImps = make(map[string]HttpHandlerI)
 	s.server = &http.Server{}
 	s.interceptor = interceptor
+	s.server.Handler = s
 	return
 }
 
@@ -60,9 +61,8 @@ func (this *HttpServer) Serve(lis net.Listener) error{
 }
 
 func (this *HttpServer) ServeHTTP(rw http.ResponseWriter, httpReq *http.Request) {
-	method := httpReq.Method
-	path := httpReq.URL.Path
-	handler, ok := this.protoImps[method + ":" + path]
+	methodPath := httpReq.Method + ":" + httpReq.URL.Path
+	handler, ok := this.protoImps[methodPath]
 	if !ok {
 		rw.WriteHeader(404)
 		return
@@ -76,11 +76,13 @@ func (this *HttpServer) ServeHTTP(rw http.ResponseWriter, httpReq *http.Request)
 	if err != nil {
 		rw.WriteHeader(501)
 	}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "serviceName", methodPath)
 	var resp interface{}
 	if this.interceptor != nil {
-		resp, err = this.interceptor(context.TODO(), req, handler.Handler)
+		resp, err = this.interceptor(ctx, req, handler.Handler)
 	}else {
-		resp, err = handler.Handler(context.TODO(), req)
+		resp, err = handler.Handler(ctx, req)
 	}
 	//如果rw没写入header，这里补上
 	if err != nil {

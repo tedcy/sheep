@@ -100,7 +100,7 @@ func (this *QueueLengthLimiter) Close() error {
 //太过激烈的波动限额值会引起更大的拥塞问题，所以每次步进delta值的1/2
 func NewInvokeTimeLimter(ctx context.Context, limit int64) *InvokeTimeLimiter {
 	l := &InvokeTimeLimiter{}
-	l.limit = limit
+	l.limit = limit * int64(time.Millisecond)
 	l.ctx, l.cancel = context.WithCancel(ctx)
 	l.tQueue = common.NewSimpleQueue()
 	l.lQueue = common.NewSimpleQueue()

@@ -26,7 +26,7 @@ func main() {
 	config.WatcherTimeout = time.Second * 3
 	config.Type = "grpc"
 	config.LimiterType = limiter.InvokeTimeLimiterType
-	config.Limit = int64(time.Millisecond * 100)
+	config.Limit = 100
 	config.Opt = &grpc.GrpcServerOpt{
 		GrpcOpts: append([]real_grpc.ServerOption{}, real_grpc.MaxConcurrentStreams(10000)),
 	}

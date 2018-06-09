@@ -20,7 +20,7 @@ type ServerConfig struct {
 	WatcherPath				string
 	LimiterType				limiter.LimiterType
 	Limit					int64
-	interceptors			[]common.ServerInterceptor
+	Interceptors			[]common.ServerInterceptor
 	Opt						interface{}
 }
 
@@ -32,7 +32,7 @@ func New(ctx context.Context, config *ServerConfig) (s *Server,err error) {
 	if s.limiterWrapper != nil {
 		interceptors = append([]common.ServerInterceptor{}, s.limiterWrapper.ServerInterceptor)
 	}
-	interceptors = append(interceptors, config.interceptors...)
+	interceptors = append(interceptors, config.Interceptors...)
 	s.server, err = real_server.New(config.Type, ctx, common.MergeInterceptor(interceptors), config.Opt)
 	if err != nil {
 		return

@@ -38,6 +38,7 @@ func New(ctx context.Context, interceptor common.ServerInterceptor, opt interfac
 //todo 函数类型怎么直接转换？
 func (this *GrpcServer) ServeGrpc(ctx context.Context, req interface{}, 
 		info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	ctx = context.WithValue(ctx, "serviceName", info.FullMethod)
 	if this.interceptor != nil {
 		return this.interceptor(ctx, req, 
 			func(ctx context.Context, req interface{}) (resp interface{}, err error) {

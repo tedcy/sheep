@@ -4,7 +4,6 @@ import (
 	"golang.org/x/net/context"
 	sheep_server "coding.net/tedcy/sheep/src/server"
 	"coding.net/tedcy/sheep/src/limiter"
-	"time"
 	"io"
 	"io/ioutil"
 )
@@ -21,7 +20,8 @@ func (s *server) Decode(in io.Reader) (req interface{}, err error) {
 	return
 }
 
-func (s *server) Encode(out io.Writer, resp interface{}) error {
+//func (s *server) Encode(resp interface{}, out io.Writer) error {
+func (s *server) Encode(resp interface{}, out io.Writer) error {
 	_, err := out.Write(resp.([]byte))
 	return err
 }
@@ -36,14 +36,17 @@ func main() {
 	config.Addr = "127.0.0.1:80"
 	config.Type = "http"
 	config.LimiterType = limiter.InvokeTimeLimiterType
-	config.Limit = int64(time.Millisecond * 100)
+	config.Limit = 100
 	realS := &server{}
 	s, err := sheep_server.New(context.Background(), config)
 	if err != nil {
 		panic(err)
 	}
 	defer s.Close()
-	s.Register("POST:/test", realS)
+	err = s.Register("GET:/test", realS)
+	if err != nil {
+		panic(err)
+	}
 	if err := s.Serve(); err != nil {
 		panic(err)
 	}
