@@ -11,7 +11,7 @@ type LimiterWrapper interface {
 	Close() error
 }
 
-func New(ctx context.Context, t limiter.LimiterType, limit int64) *limiterWrapper{
+func New(ctx context.Context, t limiter.LimiterType, limit int64) LimiterWrapper{
 	l := &limiterWrapper{}
 	switch t {
 	case limiter.QueueLengthLimiterType:
