@@ -65,17 +65,17 @@ func (this *BaseFlow) Executor(ctx context.Context, req interface{},resp interfa
 		if this.realizeTrace {
 			ctx = this.traceFI.Do("PloyWillRun", ployFI.Interface(), ctx, req, resp)
 		}
-		if ctx != nil && ctx.Err() != nil && common.GetError(ctx) != nil{
+		if ctx != nil && (ctx.Err() != nil || common.GetError(ctx) != nil){
 			return ctx
 		}
 		ctx = ployFI.Do("Run", ctx, req, resp)
-		if ctx != nil && ctx.Err() != nil && common.GetError(ctx) != nil{
+		if ctx != nil && (ctx.Err() != nil || common.GetError(ctx) != nil){
 			return ctx
 		}
 		if this.realizeTrace {
 			ctx = this.traceFI.Do("PloyDidRun", ployFI.Interface(), ctx, req, resp)
 		}
-		if ctx != nil && ctx.Err() != nil && common.GetError(ctx) != nil{
+		if ctx != nil && (ctx.Err() != nil || common.GetError(ctx) != nil){
 			return ctx
 		}
 	}
