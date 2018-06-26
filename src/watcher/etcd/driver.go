@@ -78,11 +78,11 @@ func (this *EtcdClient) Read(path string) (data []byte, err error) {
 }
 func (this *EtcdClient) List(path string) (paths []string, index uint64, err error) {
 	this.rwlock.RLock()
-	defer this.rwlock.RUnlock()
 	if this.closed {
 		err = ErrClosedClient
 		return
 	}
+	this.rwlock.RUnlock()
 	ctx := this.ctx
 	if this.timeout != 0 {
 		ctx, _ = context.WithTimeout(ctx, this.timeout)
@@ -106,16 +106,21 @@ func (this *EtcdClient) Update(path string, data []byte) (err error) {
 }
 func (this *EtcdClient) Watch(path string, cb func() (uint64, error)) (err error) {
 	this.rwlock.RLock()
-	defer this.rwlock.RUnlock()
 	if this.closed {
 		return ErrClosedClient
 	}
+	this.rwlock.RUnlock()
 	var afterIndex uint64
 	afterIndex, err = cb()
 	if err != nil {
 		return
 	}
-	w := this.kapi.Watcher(path, &client.WatcherOptions{AfterIndex: afterIndex})
+	//fix bug, Recursive: true, 不监视子路径会导致只检查这个路径
+	w := this.kapi.Watcher(path, 
+	&client.WatcherOptions{
+		AfterIndex: afterIndex,
+		Recursive: true,
+	})
 	for {
 		var resp *client.Response
 		resp, err = w.Next(this.ctx)
@@ -124,7 +129,8 @@ func (this *EtcdClient) Watch(path string, cb func() (uint64, error)) (err error
 		}
 		if resp.Action == "expire" ||
 			resp.Action == "delete" ||
-			resp.Action == "create" {
+			resp.Action == "create" ||
+			resp.Action == "set" {
 			afterIndex, err = cb()
 			if err != nil {
 				println(err)
@@ -135,11 +141,11 @@ func (this *EtcdClient) Watch(path string, cb func() (uint64, error)) (err error
 }
 func (this *EtcdClient) CreateEphemeral(path string, data []byte) (err error) {
 	this.rwlock.RLock()
-	defer this.rwlock.RUnlock()
 	if this.closed {
 		err = ErrClosedClient
 		return
 	}
+	this.rwlock.RUnlock()
 	ctx := this.ctx
 	if this.timeout != 0 {
 		ctx, _ = context.WithTimeout(ctx, this.timeout)
@@ -175,10 +181,10 @@ func (this *EtcdClient) runRefresh(path string) {
 
 func (this *EtcdClient) refresh(path string) (err error) {
 	this.rwlock.RLock()
-	defer this.rwlock.RUnlock()
 	if this.closed {
 		return ErrClosedClient
 	}
+	this.rwlock.RUnlock()
 	ctx := this.ctx
 	if this.timeout != 0 {
 		ctx, _ = context.WithTimeout(ctx, this.timeout)
@@ -197,7 +203,7 @@ func (this *EtcdClient) refresh(path string) (err error) {
 //TODO need test
 func (this *EtcdClient) Close() (err error) {
 	this.rwlock.Lock()
-	defer this.rwlock.Unlock()
+	this.rwlock.Unlock()
 	if this.closed {
 		return nil
 	}
