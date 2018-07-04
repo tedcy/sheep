@@ -75,6 +75,7 @@ func (this *HttpServer) ServeHTTP(rw http.ResponseWriter, httpReq *http.Request)
 	req, err := handler.Decode(httpReq.Body)
 	if err != nil {
 		rw.WriteHeader(501)
+		return
 	}
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "serviceName", methodPath)
