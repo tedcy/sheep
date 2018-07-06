@@ -3,16 +3,16 @@ package main
 import (
 	"golang.org/x/net/context"
 	sheep_server "coding.net/tedcy/sheep/src/server"
+	"coding.net/tedcy/sheep/src/server/real_server/http"
 	"coding.net/tedcy/sheep/src/limiter"
-	"io"
 	"io/ioutil"
 )
 
 type server struct {
 }
 
-func (s *server) Decode(in io.Reader) (req interface{}, err error) {
-	b, err := ioutil.ReadAll(in)
+func (s *server) Decode(httpReq *http.HttpReq) (req interface{},err error) {
+	b, err := ioutil.ReadAll(httpReq.Body)
 	if err != nil {
 		return
 	}
@@ -20,9 +20,12 @@ func (s *server) Decode(in io.Reader) (req interface{}, err error) {
 	return
 }
 
-//func (s *server) Encode(resp interface{}, out io.Writer) error {
-func (s *server) Encode(resp interface{}, out io.Writer) error {
-	_, err := out.Write(resp.([]byte))
+func (s *server) Encode(resp interface{}, outputErr error, rw http.ResponseWriter) error {
+	if outputErr != nil {
+		rw.Write([]byte(outputErr.Error()))
+		return
+	}
+	_, err := rw.Write(resp.([]byte))
 	return err
 }
 

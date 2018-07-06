@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"net/http"
 	"net"
-	"io"
 )
 
+//TODO responseWriter代理，两次writerHeader去重
 type HttpHandlerI interface{
 	Handler(ctx context.Context, req interface{}) (resp interface{}, err error)
-	Decode(r io.Reader) (req interface{},err error)
-	Encode(resp interface{}, rw io.Writer) (err error)
+	Decode(httpReq *HttpReq) (req interface{},err error)
+	Encode(resp interface{}, outputErr error, rw ResponseWriter) (err error)
 }
 
 type HttpServer struct {
@@ -67,31 +67,31 @@ func (this *HttpServer) ServeHTTP(rw http.ResponseWriter, httpReq *http.Request)
 		rw.WriteHeader(404)
 		return
 	}
-	if httpReq.Body == nil {
-		rw.WriteHeader(501)
-		return
-	}
-	defer httpReq.Body.Close()
-	req, err := handler.Decode(httpReq.Body)
+	realHttpReq := newHttpReq(httpReq)
+	defer realHttpReq.Close()
+	realHttpRw := newHttpResp(rw)
+	defer realHttpRw.Close()
+
+	var resp interface{}
+	var err error
+	defer func() {
+		err = handler.Encode(resp, err, realHttpRw)
+		if err != nil {
+			rw.WriteHeader(501)
+			return
+		}
+	}()
+	req, err := handler.Decode(realHttpReq)
 	if err != nil {
-		rw.WriteHeader(501)
 		return
 	}
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "serviceName", methodPath)
-	var resp interface{}
+	//拦截器的统计会受到框架报错的影响
 	if this.interceptor != nil {
 		resp, err = this.interceptor(ctx, req, handler.Handler)
 	}else {
 		resp, err = handler.Handler(ctx, req)
-	}
-	//如果rw没写入header，这里补上
-	if err != nil {
-		rw.WriteHeader(501)
-	}
-	err = handler.Encode(resp, rw)
-	if err != nil {
-		rw.WriteHeader(501)
 	}
 	return
 }
