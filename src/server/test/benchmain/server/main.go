@@ -3,10 +3,10 @@ package main
 import (
 	"golang.org/x/net/context"
 	sheep_server "coding.net/tedcy/sheep/src/server"
-	"coding.net/tedcy/sheep/src/server/limiter_wrapper"
+	"coding.net/tedcy/sheep/src/limiter"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
-	"google.golang.org/grpc"
-	//"google.golang.org/grpc/reflection"
+	"coding.net/tedcy/sheep/src/server/real_server/grpc"
+	real_grpc "google.golang.org/grpc"
 	"time"
 )
 
@@ -39,23 +39,27 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 
 func NewSheepServer(port string, cb func(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)) (serverDone chan struct{}) {
 	config := &sheep_server.ServerConfig{}
-	config.LimiterWrapperType = limiter_wrapper.InvokeTimeLimiterWrapperType
-	var i time.Duration
-	_ = i
-	config.Limit = int64(time.Millisecond * 100)
+	config.Addr = port
 	config.WatcherAddrs = "etcd://172.16.176.38:2379"
 	config.WatcherPath = "/test1"
 	config.WatcherTimeout = time.Second * 3
-	config.GrpcOpts = append(config.GrpcOpts, grpc.MaxConcurrentStreams(10000))
-	//config.Limit = 10000000
-	config.Addr = port
+	config.Type = "grpc"
+	config.LimiterType = limiter.InvokeTimeLimiterType
+	config.Limit = 100
+	config.Opt = &grpc.GrpcServerOpt{
+		GrpcOpts: append([]real_grpc.ServerOption{}, real_grpc.MaxConcurrentStreams(10000)),
+	}
 	realS := &server{}
 	realS.cb = cb
 	s, err := sheep_server.New(context.Background(), config)
 	if err != nil {
 		panic(err)
 	}
-	pb.RegisterGreeterServer(s.Server, realS)
+	h, ok := s.GetRegisterHandler().(*real_grpc.Server)
+	if !ok {
+		panic("invalid grpc handler")
+	}
+	pb.RegisterGreeterServer(h, realS)
 	serverDone = make(chan struct{})
 	go func() {
 		<-serverDone
