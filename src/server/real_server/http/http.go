@@ -74,10 +74,11 @@ func (this *HttpServer) ServeHTTP(rw http.ResponseWriter, httpReq *http.Request)
 
 	var resp interface{}
 	var err error
+	//拦截器报错也会又Encode接口来处理
 	defer func() {
 		err = handler.Encode(resp, err, realHttpRw)
 		if err != nil {
-			rw.WriteHeader(501)
+			realHttpRw.WriteHeader(501)
 			return
 		}
 	}()
