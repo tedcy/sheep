@@ -78,11 +78,11 @@ func (this *EtcdClient) Read(path string) (data []byte, err error) {
 }
 func (this *EtcdClient) List(path string) (paths []string, index uint64, err error) {
 	this.rwlock.RLock()
+	defer this.rwlock.RUnlock()
 	if this.closed {
 		err = ErrClosedClient
 		return
 	}
-	this.rwlock.RUnlock()
 	ctx := this.ctx
 	if this.timeout != 0 {
 		ctx, _ = context.WithTimeout(ctx, this.timeout)
@@ -106,10 +106,10 @@ func (this *EtcdClient) Update(path string, data []byte) (err error) {
 }
 func (this *EtcdClient) Watch(path string, cb func() (uint64, error)) (err error) {
 	this.rwlock.RLock()
+	defer this.rwlock.RUnlock()
 	if this.closed {
 		return ErrClosedClient
 	}
-	this.rwlock.RUnlock()
 	var afterIndex uint64
 	afterIndex, err = cb()
 	if err != nil {
@@ -141,11 +141,11 @@ func (this *EtcdClient) Watch(path string, cb func() (uint64, error)) (err error
 }
 func (this *EtcdClient) CreateEphemeral(path string, data []byte) (err error) {
 	this.rwlock.RLock()
+	defer this.rwlock.RUnlock()
 	if this.closed {
 		err = ErrClosedClient
 		return
 	}
-	this.rwlock.RUnlock()
 	ctx := this.ctx
 	if this.timeout != 0 {
 		ctx, _ = context.WithTimeout(ctx, this.timeout)
@@ -165,18 +165,15 @@ func (this *EtcdClient) CreateEphemeralInOrder(path string, data []byte) (err er
 }
 
 //TODO add log interface to print err msg
-//TODO fix all bug of ctx.Done
 func (this *EtcdClient) runRefresh(path string) {
 	go func() {
 		for {
 			if err := this.refresh(path); err != nil {
-				if err == ErrClosedClient {
-					break
-				}
 			}
 			select {
 			case <-time.After(this.refreshTimeout / 2):
 			case <-this.ctx.Done():
+				return
 			}
 		}
 	}()
@@ -184,10 +181,10 @@ func (this *EtcdClient) runRefresh(path string) {
 
 func (this *EtcdClient) refresh(path string) (err error) {
 	this.rwlock.RLock()
+	defer this.rwlock.RUnlock()
 	if this.closed {
 		return ErrClosedClient
 	}
-	this.rwlock.RUnlock()
 	ctx := this.ctx
 	if this.timeout != 0 {
 		ctx, _ = context.WithTimeout(ctx, this.timeout)
