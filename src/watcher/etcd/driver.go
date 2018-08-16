@@ -164,16 +164,19 @@ func (this *EtcdClient) CreateEphemeralInOrder(path string, data []byte) (err er
 	return
 }
 
+//TODO add log interface to print err msg
+//TODO fix all bug of ctx.Done
 func (this *EtcdClient) runRefresh(path string) {
 	go func() {
 		for {
 			if err := this.refresh(path); err != nil {
-				return
+				if err == ErrClosedClient {
+					break
+				}
 			}
 			select {
 			case <-time.After(this.refreshTimeout / 2):
 			case <-this.ctx.Done():
-				return
 			}
 		}
 	}()

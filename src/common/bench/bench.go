@@ -11,17 +11,22 @@ type Bench struct {
 	name		string
 	goroutines	[]int
 	time		time.Duration
-	benchFunc	func(interface{}) error
+	benchFunc	func(ctx *BenchCtx) error
 	initFunc	func() (interface{}, []chan<- struct{})
 	accurate	bool
 	data		interface{}
+}
+
+type BenchCtx struct {
+	Data			interface{}
+	GoroutineIndex	int
 }
 
 type BenchConfig struct {
 	Name		string
 	Goroutines	[]int
 	Time		time.Duration
-	BenchFunc	func(interface{}) error
+	BenchFunc	func(ctx *BenchCtx) error
 	InitFunc	func() (interface{}, []chan<- struct{})
 	Accurate	bool
 }
@@ -44,7 +49,7 @@ func New(c *BenchConfig) *Bench{
 		b.time = time.Second * 5
 	}
 	if b.benchFunc == nil {
-		b.benchFunc = func(interface{}) error {return nil}
+		b.benchFunc = func(*BenchCtx) error {return nil}
 	}
 	if b.initFunc == nil {
 		b.initFunc = func()(interface{},[]chan<-struct{}){return nil, nil}
@@ -61,14 +66,17 @@ func (this *Bench) bench(gocount int) (uint32, time.Duration, uint32, time.Durat
 	after := time.Now().Add(this.time)
 	for i := 0;i < gocount;i++ {
 		wg.Add(1)
-		go func() {
+		go func(i int) {
 			defer wg.Done()
 			var now time.Time
 			var err	error
 			var delta int64
+			ctx := &BenchCtx{}
+			ctx.Data = this.data
+			ctx.GoroutineIndex = i
 			for ;; {
 				now = time.Now()
-				err = this.benchFunc(this.data)
+				err = this.benchFunc(ctx)
 				delta = int64(time.Now().Sub(now))
 				atomic.AddInt64(&sumT, delta)
 				atomic.AddUint32(&count, 1)
@@ -80,7 +88,7 @@ func (this *Bench) bench(gocount int) (uint32, time.Duration, uint32, time.Durat
 					break
 				}
 			}
-		}()
+		}(i)
 	}
 	wg.Wait()
 	qps := count / uint32(this.time.Seconds())
