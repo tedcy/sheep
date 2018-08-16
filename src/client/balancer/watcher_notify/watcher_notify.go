@@ -35,17 +35,23 @@ type watcherNotify struct {
 	cancel  context.CancelFunc
 }
 
+//TODO add log interface to print err msg
 func (this *watcherNotify) NotifyWatcherChange() <-chan []string {
 	go func() {
 		for {
-			err := this.watcher.Watch(this.path, this.pushChan)
-			if err != nil {
-				println(err.Error())
-			}
 			select {
 			case <-this.ctx.Done():
 				return
-			case <-time.NewTimer(time.Second).C:
+			default:
+			}
+			err := this.watcher.Watch(this.path, this.pushChan)
+			if err != nil {
+				//println(err.Error())
+			}
+			select {
+			case <-time.After(time.Second):
+			case <-this.ctx.Done():
+				return
 			}
 		}
 	}()
@@ -61,13 +67,15 @@ func (this *watcherNotify) pushChan() (uint64, error) {
 	return afterIndex, nil
 }
 
+//TODO add log interface to print err msg
+//TODO return err
 func (this *watcherNotify) Close() error {
 	this.cancel()
 	close(this.nodes)
 	this.nodes = nil
 	err := this.watcher.Close()
 	if err != nil {
-		println(err)
+		//println(err)
 	}
 	return nil
 }

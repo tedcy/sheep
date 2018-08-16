@@ -171,7 +171,12 @@ func (this *InvokeTimeLimiter) timeLooper() {
 		var delta time.Duration = time.Second * 10
 		for {
 			select {
-			case <-time.After(delta):
+			case <-time.After(delta): 
+				select {
+				case <-this.ctx.Done():
+					return
+				default:
+				}
 			case <-this.ctx.Done():
 				return
 			}
@@ -202,6 +207,11 @@ func (this *InvokeTimeLimiter) timeLooper() {
 	for {
 		select {
 		case <-time.After(time.Millisecond * 10):
+			select {
+			case this.ctx.Done():
+				return
+			default:
+			}
 		case <-this.ctx.Done():
 			return
 		}

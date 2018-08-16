@@ -69,7 +69,12 @@ func (this *weighter_notify) respTimeLooper() {
 		select {
 		case <-this.ctx.Done():
 			return
-		case <-time.NewTimer(time.Second * 30).C:
+		case <-time.After(time.Second * 30):
+			select {
+			case <-this.ctx.Done():
+				return
+			default:
+			}
 		}
 		this.scanServers()
 	}

@@ -168,6 +168,11 @@ func (this *EtcdClient) CreateEphemeralInOrder(path string, data []byte) (err er
 func (this *EtcdClient) runRefresh(path string) {
 	go func() {
 		for {
+			select {
+			case <-this.ctx.Done():
+				return
+			default:
+			}
 			if err := this.refresh(path); err != nil {
 			}
 			select {
