@@ -23,7 +23,7 @@ func (s *server) Decode(httpReq *http.HttpReq) (req interface{},err error) {
 func (s *server) Encode(resp interface{}, outputErr error, rw http.ResponseWriter) error {
 	if outputErr != nil {
 		rw.Write([]byte(outputErr.Error()))
-		return
+		return outputErr
 	}
 	_, err := rw.Write(resp.([]byte))
 	return err

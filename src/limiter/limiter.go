@@ -208,7 +208,7 @@ func (this *InvokeTimeLimiter) timeLooper() {
 		select {
 		case <-time.After(time.Millisecond * 10):
 			select {
-			case this.ctx.Done():
+			case <-this.ctx.Done():
 				return
 			default:
 			}
