@@ -157,7 +157,7 @@ func (this *EtcdClient) CreateEphemeral(path string, data []byte) (err error) {
 	if err != nil {
 		return
 	}
-	this.runRefresh(path)
+	this.runRefresh(path, data)
 	return
 }
 func (this *EtcdClient) CreateEphemeralInOrder(path string, data []byte) (err error) {
@@ -165,7 +165,7 @@ func (this *EtcdClient) CreateEphemeralInOrder(path string, data []byte) (err er
 }
 
 //TODO add log interface to print err msg
-func (this *EtcdClient) runRefresh(path string) {
+func (this *EtcdClient) runRefresh(path string, data []byte) {
 	go func() {
 		for {
 			select {
@@ -173,7 +173,8 @@ func (this *EtcdClient) runRefresh(path string) {
 				return
 			default:
 			}
-			if err := this.refresh(path); err != nil {
+			if err := this.refresh(path, data); err != nil {
+				println("watcher refresh failed ", err.Error())
 			}
 			select {
 			case <-time.After(this.refreshTimeout / 2):
@@ -184,7 +185,7 @@ func (this *EtcdClient) runRefresh(path string) {
 	}()
 }
 
-func (this *EtcdClient) refresh(path string) (err error) {
+func (this *EtcdClient) refresh(path string, data []byte) (err error) {
 	this.rwlock.RLock()
 	defer this.rwlock.RUnlock()
 	if this.closed {
@@ -194,12 +195,20 @@ func (this *EtcdClient) refresh(path string) (err error) {
 	if this.timeout != 0 {
 		ctx, _ = context.WithTimeout(ctx, this.timeout)
 	}
-	_, err = this.kapi.Set(ctx, path, "",
+	_, err = this.kapi.Set(ctx, path, string(data),
 		&client.SetOptions{
-			PrevExist: client.PrevExist,
+			PrevExist: client.PrevIgnore,
 			Refresh:   true,
 			TTL:       this.refreshTimeout})
 	if err != nil {
+		//fix 即使设置了PrevIgnore,当节点已经消失后，再set依然会报错，此时需要重新不带refresh去set一次
+		_, err = this.kapi.Set(ctx, path, string(data),
+		&client.SetOptions{
+			PrevExist: client.PrevIgnore,
+			TTL:       this.refreshTimeout})
+		if err != nil {
+			return
+		}
 		return
 	}
 	return

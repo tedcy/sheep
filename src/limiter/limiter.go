@@ -8,7 +8,7 @@ package limiter
 import (
 	"coding.net/tedcy/sheep/src/common"
 	"errors"
-	//"fmt"
+	"fmt"
 	"golang.org/x/net/context"
 	"sync/atomic"
 	"time"
@@ -199,7 +199,7 @@ func (this *InvokeTimeLimiter) timeLooper() {
 			}else {
 				if this.lengthLimit != 0 {
 					atomic.AddInt64(&this.lengthLimit, 1)
-					//fmt.Printf("newQueueLength: %d\n", this.lengthLimit)
+					fmt.Printf("newQueueLength: %d\n", this.lengthLimit)
 				}
 			}
 		}
