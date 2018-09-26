@@ -67,13 +67,44 @@ func (this *EtcdClient) GetLocalIp() string {
 	return strings.SplitN(conn.LocalAddr().String(),":",2)[0]
 }
 
-func (this *EtcdClient) Create(path string, data []byte) (err error) {
+func (this *EtcdClient) Create(path string, data string) (err error) {
+	this.rwlock.RLock()
+	defer this.rwlock.RUnlock()
+	if this.closed {
+		err = ErrClosedClient
+		return
+	}
+	ctx := this.ctx
+	if this.timeout != 0 {
+		ctx, _ = context.WithTimeout(ctx, this.timeout)
+	}
+	_, err = this.kapi.Set(ctx, path, data, &client.SetOptions{
+			PrevExist: client.PrevIgnore})
+	if err != nil {
+		return
+	}
 	return
 }
 func (this *EtcdClient) Delete(path string) (err error) {
 	return
 }
-func (this *EtcdClient) Read(path string) (data []byte, err error) {
+func (this *EtcdClient) Read(path string) (data string, index uint64, err error) {
+	this.rwlock.RLock()
+	defer this.rwlock.RUnlock()
+	if this.closed {
+		err = ErrClosedClient
+		return
+	}
+	ctx := this.ctx
+	if this.timeout != 0 {
+		ctx, _ = context.WithTimeout(ctx, this.timeout)
+	}
+	resp, err := this.kapi.Get(ctx, path, nil)
+	if err != nil {
+		return
+	}
+	data = resp.Node.Value
+	index = resp.Index
 	return
 }
 func (this *EtcdClient) List(path string) (paths []string, index uint64, err error) {

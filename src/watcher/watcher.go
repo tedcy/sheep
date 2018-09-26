@@ -11,10 +11,10 @@ import (
 
 type WatcherI interface {
 	GetLocalIp() string
-	Create(path string, data []byte) error
+	Create(path string, data string) error
 	Delete(path string) error
 
-	Read(path string) ([]byte, error)
+	Read(path string) (string, uint64, error)
 	//return keys, index, error
 	List(path string) ([]string, uint64, error)
 

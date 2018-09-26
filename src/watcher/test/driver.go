@@ -35,13 +35,13 @@ type test struct {
 	watch func(path string, cb func() (uint64, error)) (err error)
 }
 
-func (this *test) Create(path string, data []byte) (err error) {
+func (this *test) Create(path string, data string) (err error) {
 	return
 }
 func (this *test) Delete(path string) (err error) {
 	return
 }
-func (this *test) Read(path string) (data []byte, err error) {
+func (this *test) Read(path string) (data string, index uint64, err error) {
 	return
 }
 func (this *test) List(path string) (paths []string, index uint64, err error) {

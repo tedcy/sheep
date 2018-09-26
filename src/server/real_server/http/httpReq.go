@@ -14,6 +14,7 @@ type HttpReq struct {
 	Headers HttpMap
 	QueryStrs HttpMap 
 	Body io.Reader
+	Path string
 }
 
 func newHttpReq(req *http.Request) (httpReq *HttpReq){
@@ -22,6 +23,7 @@ func newHttpReq(req *http.Request) (httpReq *HttpReq){
 	httpReq.Body = req.Body
 	httpReq.Headers = req.Header
 	httpReq.QueryStrs = req.URL.Query()
+	httpReq.Path = req.URL.Path
 	return httpReq
 }
 

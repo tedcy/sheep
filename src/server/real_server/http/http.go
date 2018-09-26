@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net"
+	"strings"
 )
 
 //TODO responseWriter代理，两次writerHeader去重
@@ -19,6 +20,7 @@ type HttpServer struct {
 	server				*http.Server
 	interceptor         common.ServerInterceptor
 	protoImps			map[string]HttpHandlerI
+	protoSlowImps		map[string]HttpHandlerI
 }
 
 type HttpServerOpt struct {
@@ -32,13 +34,15 @@ func New(ctx context.Context, interceptor common.ServerInterceptor, opt interfac
 	}*/
 	s = &HttpServer{}
 	s.protoImps = make(map[string]HttpHandlerI)
+	s.protoSlowImps = make(map[string]HttpHandlerI)
 	s.server = &http.Server{}
 	s.interceptor = interceptor
 	s.server.Handler = s
 	return
 }
 
-//Register GET:path
+//Register GET:/path
+//Register GET:/path*
 func (this *HttpServer) Register(protoDesc interface{}, imp interface{}) error{
 	s, ok := protoDesc.(string)
 	if !ok {
@@ -47,6 +51,11 @@ func (this *HttpServer) Register(protoDesc interface{}, imp interface{}) error{
 	handler, ok := imp.(HttpHandlerI)
 	if !ok {
 		return fmt.Errorf("invalid http imp")
+	}
+	if strings.HasSuffix(s, "*") {
+		s = strings.TrimSuffix(s, "*")
+		this.protoSlowImps[s] = handler
+		return nil
 	}
 	this.protoImps[s] = handler
 	return nil
@@ -64,8 +73,16 @@ func (this *HttpServer) ServeHTTP(rw http.ResponseWriter, httpReq *http.Request)
 	methodPath := httpReq.Method + ":" + httpReq.URL.Path
 	handler, ok := this.protoImps[methodPath]
 	if !ok {
-		rw.WriteHeader(404)
-		return
+		for path, impsHandler := range this.protoSlowImps {
+			if strings.HasPrefix(methodPath, path) {
+				ok = true
+				handler = impsHandler
+			}
+		}
+		if !ok {
+			rw.WriteHeader(404)
+			return
+		}
 	}
 	realHttpReq := newHttpReq(httpReq)
 	defer realHttpReq.Close()
