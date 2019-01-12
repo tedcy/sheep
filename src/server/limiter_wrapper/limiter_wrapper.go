@@ -1,8 +1,8 @@
 package limiter_wrapper
 
 import (
-	"coding.net/tedcy/sheep/src/limiter"
-	"coding.net/tedcy/sheep/src/server/real_server/common"
+	"github.com/tedcy/sheep/src/limiter"
+	"github.com/tedcy/sheep/src/server/real_server/common"
 	"golang.org/x/net/context"
 )
 

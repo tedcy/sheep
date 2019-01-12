@@ -1,8 +1,8 @@
 package coster
 
 import (
-	"coding.net/tedcy/sheep/src/common"
-	//"coding.net/tedcy/sheep/src/extends/log"
+	"github.com/tedcy/sheep/src/common"
+	//"github.com/tedcy/sheep/src/extends/log"
 	"sync"
 	"time"
 	"sync/atomic"

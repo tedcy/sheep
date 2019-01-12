@@ -1,8 +1,8 @@
 package breaker_notify
 
 import (
-	gobreaker "coding.net/tedcy/sheep/src/breaker"
-	"coding.net/tedcy/sheep/src/common"
+	gobreaker "github.com/tedcy/sheep/src/breaker"
+	"github.com/tedcy/sheep/src/common"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"

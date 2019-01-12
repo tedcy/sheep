@@ -3,7 +3,7 @@ package weighter_balancer
 import (
 	"testing"
 	"fmt"
-	"coding.net/tedcy/sheep/src/common"	
+	"github.com/tedcy/sheep/src/common"	
 )
 
 func Test_All(t *testing.T) {

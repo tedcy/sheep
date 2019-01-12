@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"golang.org/x/net/context"
-	"coding.net/tedcy/sheep/src/common"
+	"github.com/tedcy/sheep/src/common"
 )
 
 type FakeInterface struct {

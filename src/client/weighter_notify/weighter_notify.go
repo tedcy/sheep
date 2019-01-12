@@ -1,7 +1,7 @@
 package weighter_notify
 
 import (
-	"coding.net/tedcy/sheep/src/common"
+	"github.com/tedcy/sheep/src/common"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"

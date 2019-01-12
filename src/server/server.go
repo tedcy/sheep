@@ -1,11 +1,11 @@
 package server
 
 import (
-	"coding.net/tedcy/sheep/src/watcher"
-	"coding.net/tedcy/sheep/src/limiter"
-	"coding.net/tedcy/sheep/src/server/limiter_wrapper"
-	"coding.net/tedcy/sheep/src/server/real_server"
-	"coding.net/tedcy/sheep/src/server/real_server/common"
+	"github.com/tedcy/sheep/src/watcher"
+	"github.com/tedcy/sheep/src/limiter"
+	"github.com/tedcy/sheep/src/server/limiter_wrapper"
+	"github.com/tedcy/sheep/src/server/real_server"
+	"github.com/tedcy/sheep/src/server/real_server/common"
 	"golang.org/x/net/context"
 	"net"
 	"time"

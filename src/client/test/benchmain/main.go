@@ -1,10 +1,10 @@
 package main
 
 import (
-	"coding.net/tedcy/sheep/src/client"
-	"coding.net/tedcy/sheep/src/client/test"
-	//"coding.net/tedcy/sheep/src/client/test/benchmain/kettytest"
-	"coding.net/tedcy/sheep/src/common/bench"
+	"github.com/tedcy/sheep/src/client"
+	"github.com/tedcy/sheep/src/client/test"
+	//"github.com/tedcy/sheep/src/client/test/benchmain/kettytest"
+	"github.com/tedcy/sheep/src/common/bench"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"time"

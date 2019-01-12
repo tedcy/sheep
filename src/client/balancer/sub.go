@@ -1,7 +1,7 @@
 package balancer
 
 import (
-	"coding.net/tedcy/sheep/src/common"
+	"github.com/tedcy/sheep/src/common"
 	"google.golang.org/grpc"
 )
 

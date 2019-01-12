@@ -1,9 +1,9 @@
 package client
 
 import (
-	"coding.net/tedcy/sheep/src/client/balancer"
-	"coding.net/tedcy/sheep/src/client/breaker_notify"
-	"coding.net/tedcy/sheep/src/client/weighter_notify"
+	"github.com/tedcy/sheep/src/client/balancer"
+	"github.com/tedcy/sheep/src/client/breaker_notify"
+	"github.com/tedcy/sheep/src/client/weighter_notify"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"time"

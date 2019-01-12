@@ -1,9 +1,9 @@
 package balancer
 
 import (
-	"coding.net/tedcy/sheep/src/client/balancer/watcher_notify"
-	"coding.net/tedcy/sheep/src/client/balancer/weighter_balancer"
-	"coding.net/tedcy/sheep/src/common"
+	"github.com/tedcy/sheep/src/client/balancer/watcher_notify"
+	"github.com/tedcy/sheep/src/client/balancer/weighter_balancer"
+	"github.com/tedcy/sheep/src/common"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"time"

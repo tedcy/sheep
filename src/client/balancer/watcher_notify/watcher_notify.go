@@ -1,7 +1,7 @@
 package watcher_notify
 
 import (
-	"coding.net/tedcy/sheep/src/watcher"
+	"github.com/tedcy/sheep/src/watcher"
 	"golang.org/x/net/context"
 	"time"
 )

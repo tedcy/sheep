@@ -1,7 +1,7 @@
 package http
 
 import (
-	"coding.net/tedcy/sheep/src/server/real_server/common"
+	"github.com/tedcy/sheep/src/server/real_server/common"
 	"golang.org/x/net/context"
 	"fmt"
 	"net/http"

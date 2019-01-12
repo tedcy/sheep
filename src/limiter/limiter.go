@@ -6,7 +6,7 @@ package limiter
 //所以限流器更适合服务端，而熔断器更适合客户端
 
 import (
-	"coding.net/tedcy/sheep/src/common"
+	"github.com/tedcy/sheep/src/common"
 	"errors"
 	"fmt"
 	"golang.org/x/net/context"

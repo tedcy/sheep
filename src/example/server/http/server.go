@@ -2,9 +2,9 @@ package main
 
 import (
 	"golang.org/x/net/context"
-	sheep_server "coding.net/tedcy/sheep/src/server"
-	"coding.net/tedcy/sheep/src/server/real_server/http"
-	"coding.net/tedcy/sheep/src/limiter"
+	sheep_server "github.com/tedcy/sheep/src/server"
+	"github.com/tedcy/sheep/src/server/real_server/http"
+	"github.com/tedcy/sheep/src/limiter"
 	"io/ioutil"
 )
 

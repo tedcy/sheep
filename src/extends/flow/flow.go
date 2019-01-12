@@ -2,8 +2,8 @@ package flow
 
 import (
 	"golang.org/x/net/context"
-	"coding.net/tedcy/sheep/src/extends/flow/fake_interface"
-	"coding.net/tedcy/sheep/src/common"
+	"github.com/tedcy/sheep/src/extends/flow/fake_interface"
+	"github.com/tedcy/sheep/src/common"
 	"fmt"
 )
 

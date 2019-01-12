@@ -2,11 +2,11 @@ package main
 
 import (
 	"golang.org/x/net/context"
-	sheep_server "coding.net/tedcy/sheep/src/server"
-	sheep_server_grpc "coding.net/tedcy/sheep/src/server/real_server/grpc"
-	sheep_client "coding.net/tedcy/sheep/src/client"
-	"coding.net/tedcy/sheep/src/client/test"
-	"coding.net/tedcy/sheep/src/limiter"
+	sheep_server "github.com/tedcy/sheep/src/server"
+	sheep_server_grpc "github.com/tedcy/sheep/src/server/real_server/grpc"
+	sheep_client "github.com/tedcy/sheep/src/client"
+	"github.com/tedcy/sheep/src/client/test"
+	"github.com/tedcy/sheep/src/limiter"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"google.golang.org/grpc"
 	//"google.golang.org/grpc/reflection"

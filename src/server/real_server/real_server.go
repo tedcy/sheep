@@ -1,9 +1,9 @@
 package real_server
 
 import (
-	"coding.net/tedcy/sheep/src/server/real_server/grpc"
-	"coding.net/tedcy/sheep/src/server/real_server/http"
-	"coding.net/tedcy/sheep/src/server/real_server/common"
+	"github.com/tedcy/sheep/src/server/real_server/grpc"
+	"github.com/tedcy/sheep/src/server/real_server/http"
+	"github.com/tedcy/sheep/src/server/real_server/common"
 	"golang.org/x/net/context"
 	"net"
 	"fmt"

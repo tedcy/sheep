@@ -1,8 +1,8 @@
 package test
 
 import (
-	"coding.net/tedcy/sheep/src/client"
-	"coding.net/tedcy/sheep/src/watcher/test"
+	"github.com/tedcy/sheep/src/client"
+	"github.com/tedcy/sheep/src/watcher/test"
 	"fmt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

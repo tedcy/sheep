@@ -3,7 +3,7 @@ package grpc
 import (
 	"google.golang.org/grpc"
 	"golang.org/x/net/context"
-	"coding.net/tedcy/sheep/src/server/real_server/common"
+	"github.com/tedcy/sheep/src/server/real_server/common"
 	"fmt"
 	"net"
 )

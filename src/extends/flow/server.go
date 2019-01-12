@@ -2,7 +2,7 @@ package flow
 
 import (
 	"golang.org/x/net/context"
-	sheep_server "coding.net/tedcy/sheep/src/server"
+	sheep_server "github.com/tedcy/sheep/src/server"
 )
 
 type Server struct {
