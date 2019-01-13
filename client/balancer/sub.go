@@ -5,11 +5,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-//watcher
-func (this *Balancer) SetNotifyWatcher(notify <-chan []string) {
+//resolverNotify
+func (this *Balancer) SetNotifyResolver(notify <-chan []string) {
 	go func() {
 		for nodes := range notify {
-			this.weighterBalancer.UpdateAllWithoutWeight(nodes)
+			this.lbPolicy.UpdateAllWithoutWeight(nodes)
 			//通知grpc
 			var addrs []grpc.Address
 			for _, key := range nodes {
@@ -22,11 +22,11 @@ func (this *Balancer) SetNotifyWatcher(notify <-chan []string) {
 	}()
 }
 
-//weighter
-func (this *Balancer) SetNotifyWeighterChange(notify <-chan []*common.KV) {
+//lbPolicy
+func (this *Balancer) SetNotifyLbPolicyChange(notify <-chan []*common.KV) {
 	go func() {
 		for nodes := range notify {
-			this.weighterBalancer.UpdateAll(nodes)
+			this.lbPolicy.UpdateAll(nodes)
 		}
 	}()
 }
@@ -35,7 +35,7 @@ func (this *Balancer) SetNotifyWeighterChange(notify <-chan []*common.KV) {
 func (this *Balancer) SetNotifyOpen(notify <-chan string) {
 	go func() {
 		for node := range notify {
-			this.weighterBalancer.Disable(node)
+			this.lbPolicy.Disable(node)
 		}
 	}()
 }
@@ -43,7 +43,7 @@ func (this *Balancer) SetNotifyOpen(notify <-chan string) {
 func (this *Balancer) SetNotifyClose(notify <-chan string) {
 	go func() {
 		for node := range notify {
-			this.weighterBalancer.Enable(node)
+			this.lbPolicy.Enable(node)
 		}
 	}()
 }
@@ -51,7 +51,7 @@ func (this *Balancer) SetNotifyClose(notify <-chan string) {
 func (this *Balancer) SetNotifyHalfOpen(notify <-chan string) {
 	go func() {
 		for node := range notify {
-			this.weighterBalancer.Enable(node)
+			this.lbPolicy.Enable(node)
 		}
 	}()
 }

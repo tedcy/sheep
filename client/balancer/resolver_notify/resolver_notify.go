@@ -1,4 +1,4 @@
-package watcher_notify
+package resolver_notify
 
 import (
 	"github.com/tedcy/sheep/watcher"
@@ -6,13 +6,13 @@ import (
 	"time"
 )
 
-type WatcherNotifyI interface {
-	NotifyWatcherChange() <-chan []string
+type ResolverNotifyI interface {
+	NotifyResolverChange() <-chan []string
 	Close() error
 }
 
-func New(ctx context.Context, target, path string, timeout time.Duration) (WatcherNotifyI, error) {
-	w := &watcherNotify{}
+func New(ctx context.Context, target, path string, timeout time.Duration) (ResolverNotifyI, error) {
+	w := &resolverNotify{}
 	var err error
 	config := &watcher.Config{}
 	config.Target = target
@@ -27,7 +27,7 @@ func New(ctx context.Context, target, path string, timeout time.Duration) (Watch
 	return w, nil
 }
 
-type watcherNotify struct {
+type resolverNotify struct {
 	watcher watcher.WatcherI
 	nodes   chan []string
 	path    string
@@ -36,7 +36,7 @@ type watcherNotify struct {
 }
 
 //TODO add log interface to print err msg
-func (this *watcherNotify) NotifyWatcherChange() <-chan []string {
+func (this *resolverNotify) NotifyResolverChange() <-chan []string {
 	go func() {
 		for {
 			select {
@@ -58,7 +58,7 @@ func (this *watcherNotify) NotifyWatcherChange() <-chan []string {
 	return this.nodes
 }
 
-func (this *watcherNotify) pushChan() (uint64, error) {
+func (this *resolverNotify) pushChan() (uint64, error) {
 	nodes, afterIndex, err := this.watcher.List(this.path)
 	if err != nil {
 		return 0, err
@@ -69,7 +69,7 @@ func (this *watcherNotify) pushChan() (uint64, error) {
 
 //TODO add log interface to print err msg
 //TODO return err
-func (this *watcherNotify) Close() error {
+func (this *resolverNotify) Close() error {
 	this.cancel()
 	close(this.nodes)
 	this.nodes = nil

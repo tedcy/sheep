@@ -1,4 +1,4 @@
-package weighter_balancer
+package lb_policy
 
 import (
 	"testing"

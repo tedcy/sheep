@@ -80,7 +80,7 @@ func (this *client) withBalanceType(t BalancerType) {
 		this.weighter = weighter_notify.New(this.ctx, weighter_notify.DefaultWeighter)
 	}
 	if this.weighter != nil {
-		this.Balancer.SetNotifyWeighterChange(this.weighter.NotifyWeighterChange())
+		this.Balancer.SetNotifyLbPolicyChange(this.weighter.NotifyWeighterChange())
 		this.intercepts = append(this.intercepts, this.weighter.GrpcUnaryClientInterceptor)
 	}
 }

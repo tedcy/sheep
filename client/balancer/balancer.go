@@ -1,8 +1,8 @@
 package balancer
 
 import (
-	"github.com/tedcy/sheep/client/balancer/watcher_notify"
-	"github.com/tedcy/sheep/client/balancer/weighter_balancer"
+	"github.com/tedcy/sheep/client/balancer/resolver_notify"
+	"github.com/tedcy/sheep/client/balancer/lb_policy"
 	"github.com/tedcy/sheep/common"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -20,8 +20,8 @@ type Balancer interface {
 */
 
 type Balancer struct {
-	weighterBalancer weighter_balancer.WeightBalancerI
-	watcherNotify    watcher_notify.WatcherNotifyI
+	lbPolicy			lb_policy.WeightBalancerI
+	resolverNotify		resolver_notify.ResolverNotifyI
 	addressChan      chan []grpc.Address
 	path             string
 	timeout          time.Duration
@@ -32,7 +32,7 @@ func New(ctx context.Context, path string, timeout time.Duration) (balancer *Bal
 	balancer = &Balancer{}
 	balancer.path = path
 	balancer.timeout = timeout
-	balancer.weighterBalancer = weighter_balancer.New()
+	balancer.lbPolicy = lb_policy.New()
 	balancer.addressChan = make(chan []grpc.Address)
 	balancer.ctx = ctx
 	if err != nil {
@@ -42,11 +42,11 @@ func New(ctx context.Context, path string, timeout time.Duration) (balancer *Bal
 }
 
 func (this *Balancer) Start(target string, config grpc.BalancerConfig) (err error) {
-	this.watcherNotify, err = watcher_notify.New(this.ctx, target, this.path, this.timeout)
+	this.resolverNotify, err = resolver_notify.New(this.ctx, target, this.path, this.timeout)
 	if err != nil {
 		return
 	}
-	this.SetNotifyWatcher(this.watcherNotify.NotifyWatcherChange())
+	this.SetNotifyResolver(this.resolverNotify.NotifyResolverChange())
 	return
 }
 
@@ -55,7 +55,7 @@ func (this *Balancer) Up(addr grpc.Address) (down func(error)) {
 }
 func (this *Balancer) Get(ctx context.Context, opts grpc.BalancerGetOptions) (addr grpc.Address, put func(), err error) {
 	var ok bool
-	addr.Addr, ok = this.weighterBalancer.Get()
+	addr.Addr, ok = this.lbPolicy.Get()
 	if !ok {
 		err = common.ErrNoAvailableClients
 	}
@@ -65,7 +65,7 @@ func (this *Balancer) Notify() <-chan []grpc.Address {
 	return this.addressChan
 }
 func (this *Balancer) Close() error {
-	err := this.watcherNotify.Close()
+	err := this.resolverNotify.Close()
 	if err != nil {
 		println(err.Error())
 	}

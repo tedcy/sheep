@@ -1,4 +1,4 @@
-package weighter_balancer
+package lb_policy
 
 //加权选择器
 
@@ -20,10 +20,10 @@ type WeightBalancerI interface {
 	//choose
 	Get() (key string, ok bool)
 
-	//watcher
+	//resolverNotify
 	UpdateAllWithoutWeight(keys []string)
 
-	//weighter
+	//lbPolicy
 	UpdateAll(kvs []*common.KV)
 
 	//breaker
@@ -118,7 +118,7 @@ func (this *balancer) getEnableAvg(data map[string]*weightNode) int {
 	return avg
 }
 
-//watcher触发
+//resolverNotify触发
 //以新keys为基准，多出来的不要，少的补全
 func (this *balancer) UpdateAllWithoutWeight(keys []string) {
 	this.rwlock.Lock()
@@ -148,7 +148,7 @@ func (this *balancer) UpdateAllWithoutWeight(keys []string) {
 	this.updateWeightEndPool()
 }
 
-//weighter触发，不新增删除节点
+//lbPolicy触发，不新增删除节点
 func (this *balancer) UpdateAll(kvs []*common.KV) {
 	this.rwlock.Lock()
 	defer this.rwlock.Unlock()
