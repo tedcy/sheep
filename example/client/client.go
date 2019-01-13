@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/tedcy/sheep/src/client"
+	"github.com/tedcy/sheep/client"
 	"golang.org/x/net/context"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"google.golang.org/grpc"

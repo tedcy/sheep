@@ -2,9 +2,9 @@ package main
 
 import (
 	"golang.org/x/net/context"
-	sheep_server "github.com/tedcy/sheep/src/server"
-	"github.com/tedcy/sheep/src/limiter"
-	"github.com/tedcy/sheep/src/server/real_server/grpc"
+	sheep_server "github.com/tedcy/sheep/server"
+	"github.com/tedcy/sheep/limiter"
+	"github.com/tedcy/sheep/server/real_server/grpc"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	real_grpc "google.golang.org/grpc"
 	"time"

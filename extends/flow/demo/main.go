@@ -17,9 +17,9 @@ func main() {
 	common.Assert(err)
 
 	testApi := new(TestApi)
-	_, err = server.NewFlow(testApi)
+	biddingFlow, err := server.NewFlow(testApi)
 	common.Assert(err)
-	initBidding(testApi.FlowI)
+	initBidding(biddingFlow)
 
 	err = server.Serve()
 	common.Assert(err)
