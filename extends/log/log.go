@@ -185,3 +185,41 @@ func (lv Level) Header() string {
 		return "U"
     }
 }
+
+func Debugf(format string, args ... interface{}) {
+	GetLog().Debugf(format, args...);
+}
+func Infof(format string, args ... interface{}) {
+	GetLog().Infof(format, args...);
+}
+func Warningf(format string, args ... interface{}) {
+	GetLog().Warningf(format, args...);
+}
+func Errorf(format string, args ... interface{}) {
+	GetLog().Errorf(format, args...);
+}
+func Fatalf(format string, args ... interface{}) {
+	GetLog().Fatalf(format, args...);
+}
+func Recordf(format string, args ... interface{}) {
+	GetLog().Recordf(format, args...);
+}
+
+func Debugln(args ... interface{}) {
+	GetLog().Debugln(args...);
+}
+func Infoln(args ... interface{}) {
+	GetLog().Infoln(args...);
+}
+func Warningln(args ... interface{}) {
+	GetLog().Warningln(args...);
+}
+func Errorln(args ... interface{}) {
+	GetLog().Errorln(args...);
+}
+func Fatalln(args ... interface{}) {
+	GetLog().Fatalln(args...);
+}
+func Recordln(args ... interface{}) {
+	GetLog().Recordln(args...);
+}
