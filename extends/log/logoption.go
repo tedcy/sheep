@@ -327,6 +327,9 @@ func headerLeader2func(leader string) func(ctx context.Context, level Level, dep
 			if !ok {
 				var line int
 				file, line = getFileLine(3 + depth)
+				if (file == "log.go") {
+					file, line = getFileLine(4 + depth)
+				}
 				ctx = context.WithValue(ctx, fileKey{}, file)
 				ctx = context.WithValue(ctx, lineKey{}, line)
 			}
