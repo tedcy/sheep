@@ -90,7 +90,7 @@ func (db *DB) Exec(query string, args ...interface{}) (Result, error) {
 }
 
 func MySQLConnect(address, user, pwd, db_name string) (db *DB, err error) {
-	return MySQLConnectWithConnNum(address, user, pwd, db_name, 128)
+	return MySQLConnectWithConnNum(address, user, pwd, db_name, 2048)
 }
 
 func MySQLConnectS(conf MySQLConfig) (db *DB, err error) {
